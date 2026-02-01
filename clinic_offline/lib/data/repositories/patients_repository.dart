@@ -25,7 +25,47 @@ class PatientsRepository {
     await _db.into(_db.patients).insertOnConflictUpdate(companion);
   }
 
+  Future<void> normalizeAllNames() async {
+    final rows = await _db.select(_db.patients).get();
+    await _db.transaction(() async {
+      for (final row in rows) {
+        final normalized = normalizePatientName(row.fullName);
+        if (normalized == row.fullName) continue;
+        await (_db.update(_db.patients)..where((t) => t.id.equals(row.id)))
+            .write(PatientsCompanion(fullName: Value(normalized)));
+      }
+    });
+  }
+
+  static String normalizePatientName(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return trimmed;
+    final parts = trimmed.split(RegExp(r'\s+'));
+    final normalized = parts.map((part) {
+      if (part.isEmpty) return part;
+      final lower = _trToLower(part);
+      final first = _trToUpper(lower.substring(0, 1));
+      final rest = lower.substring(1);
+      return '$first$rest';
+    }).join(' ');
+    return normalized;
+  }
+
   Future<void> deleteById(String id) async {
     await (_db.delete(_db.patients)..where((t) => t.id.equals(id))).go();
   }
+}
+
+String _trToUpper(String value) {
+  return value
+      .replaceAll('i', 'İ')
+      .replaceAll('ı', 'I')
+      .toUpperCase();
+}
+
+String _trToLower(String value) {
+  return value
+      .replaceAll('I', 'ı')
+      .replaceAll('İ', 'i')
+      .toLowerCase();
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'router.dart';
@@ -9,12 +9,11 @@ class ClinicApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
-    return MaterialApp.router(
+    return CupertinoApp.router(
       title: 'Clinic Offline',
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF0E5C8F),
-        useMaterial3: true,
+      theme: const CupertinoThemeData(
         brightness: Brightness.light,
+        primaryColor: CupertinoColors.activeBlue,
       ),
       routerConfig: router,
     );

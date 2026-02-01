@@ -16,6 +16,10 @@ class VisitsRepository {
     return query.watch();
   }
 
+  Future<Visit> getById(String id) {
+    return (_db.select(_db.visits)..where((t) => t.id.equals(id))).getSingle();
+  }
+
   Future<void> insert(VisitsCompanion companion) async {
     await _db.into(_db.visits).insert(companion);
   }

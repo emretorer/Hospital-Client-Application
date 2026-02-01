@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:uuid/uuid.dart';
 
 import '../../data/db/app_db.dart';
 import '../../providers.dart';
+import '../../data/repositories/patients_repository.dart';
 
 class EditPatientScreen extends ConsumerStatefulWidget {
   const EditPatientScreen({super.key, this.patient});
@@ -16,7 +17,6 @@ class EditPatientScreen extends ConsumerStatefulWidget {
 }
 
 class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
@@ -43,13 +43,14 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_nameController.text.trim().isEmpty) return;
 
     final repo = ref.read(patientsRepositoryProvider);
     final id = widget.patient?.id ?? const Uuid().v4();
     final companion = PatientsCompanion(
       id: Value(id),
-      fullName: Value(_nameController.text.trim()),
+      fullName:
+          Value(PatientsRepository.normalizePatientName(_nameController.text)),
       phone: Value(_phoneController.text.trim().isEmpty
           ? null
           : _phoneController.text.trim()),
@@ -68,58 +69,118 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.patient == null ? 'Add Patient' : 'Edit Patient'),
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(widget.patient == null ? 'Add Patient' : 'Edit Patient'),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _save,
+          child: const Text('Save'),
+        ),
       ),
-      body: Form(
-        key: _formKey,
+      child: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Full name'),
-              validator: (value) =>
-                  value == null || value.trim().isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _phoneController,
-              decoration: const InputDecoration(labelText: 'Phone'),
-            ),
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(_dob == null
-                  ? 'Date of birth'
-                  : 'DOB: ${_dob!.toLocal().toString().split(' ').first}'),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  firstDate: DateTime(1900),
-                  lastDate: DateTime.now(),
-                  initialDate: _dob ?? DateTime(1990, 1, 1),
-                );
-                if (picked != null) {
-                  setState(() => _dob = picked);
-                }
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _notesController,
-              maxLines: 4,
-              decoration: const InputDecoration(labelText: 'Notes'),
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _save,
-              child: const Text('Save'),
+            CupertinoFormSection.insetGrouped(
+              children: [
+                CupertinoFormRow(
+                  prefix: const Text('Full name'),
+                  child: CupertinoTextField(
+                    controller: _nameController,
+                    placeholder: 'Required',
+                  ),
+                ),
+                CupertinoFormRow(
+                  prefix: const Text('Phone'),
+                  child: CupertinoTextField(
+                    controller: _phoneController,
+                    placeholder: 'Optional',
+                  ),
+                ),
+                CupertinoFormRow(
+                  prefix: const Text('DOB'),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () async {
+                      final picked = await showCupertinoModalPopup<DateTime>(
+                        context: context,
+                        builder: (context) => _DatePickerSheet(
+                          initial: _dob ?? DateTime(1990, 1, 1),
+                          mode: CupertinoDatePickerMode.date,
+                        ),
+                      );
+                      if (picked != null) {
+                        setState(() => _dob = picked);
+                      }
+                    },
+                    child: Text(_dob == null
+                        ? 'Select'
+                        : _dob!.toLocal().toString().split(' ').first),
+                  ),
+                ),
+                CupertinoFormRow(
+                  prefix: const Text('Notes'),
+                  child: CupertinoTextField(
+                    controller: _notesController,
+                    placeholder: 'Optional',
+                  ),
+                ),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DatePickerSheet extends StatefulWidget {
+  const _DatePickerSheet({required this.initial, required this.mode});
+
+  final DateTime initial;
+  final CupertinoDatePickerMode mode;
+
+  @override
+  State<_DatePickerSheet> createState() => _DatePickerSheetState();
+}
+
+class _DatePickerSheetState extends State<_DatePickerSheet> {
+  late DateTime _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initial;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 280,
+      color: CupertinoColors.systemBackground,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CupertinoButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              CupertinoButton(
+                onPressed: () => Navigator.of(context).pop(_value),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+          Expanded(
+            child: CupertinoDatePicker(
+              mode: widget.mode,
+              initialDateTime: _value,
+              onDateTimeChanged: (value) => setState(() => _value = value),
+            ),
+          ),
+        ],
       ),
     );
   }

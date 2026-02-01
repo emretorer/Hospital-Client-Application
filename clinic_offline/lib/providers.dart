@@ -2,8 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'data/db/app_db.dart';
 import 'data/repositories/appointments_repository.dart';
+import 'data/repositories/analytics_repository.dart';
 import 'data/repositories/patients_repository.dart';
 import 'data/repositories/photos_repository.dart';
+import 'data/repositories/procedures_repository.dart';
+import 'data/repositories/visit_procedures_repository.dart';
 import 'data/repositories/visits_repository.dart';
 import 'services/app_lock_service.dart';
 import 'services/app_paths.dart';
@@ -33,6 +36,19 @@ final appointmentsRepositoryProvider = Provider<AppointmentsRepository>((ref) {
 
 final photosRepositoryProvider = Provider<PhotosRepository>((ref) {
   return PhotosRepository(ref.watch(databaseProvider));
+});
+
+final proceduresRepositoryProvider = Provider<ProceduresRepository>((ref) {
+  return ProceduresRepository(ref.watch(databaseProvider));
+});
+
+final visitProceduresRepositoryProvider =
+    Provider<VisitProceduresRepository>((ref) {
+  return VisitProceduresRepository(ref.watch(databaseProvider));
+});
+
+final analyticsRepositoryProvider = Provider<AnalyticsRepository>((ref) {
+  return AnalyticsRepository(ref.watch(databaseProvider));
 });
 
 final imageStorageProvider = Provider<ImageStorageService>((ref) {

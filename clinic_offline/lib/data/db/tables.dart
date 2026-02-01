@@ -49,3 +49,27 @@ class Photos extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+class Procedures extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  IntColumn get defaultPrice => integer().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class VisitProcedures extends Table {
+  TextColumn get id => text()();
+  TextColumn get visitId => text().references(Visits, #id)();
+  TextColumn get procedureId => text().references(Procedures, #id)();
+  IntColumn get quantity => integer().withDefault(const Constant(1))();
+  IntColumn get unitPrice => integer()();
+  IntColumn get discount => integer().nullable()();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

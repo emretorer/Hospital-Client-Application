@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../providers.dart';
 
@@ -81,8 +81,12 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       await backupService.importBackup(File(result.files.single.path!), password);
       await _loadLastBackup();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Backup imported. Restart app.')),
+        await showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => const CupertinoAlertDialog(
+            title: Text('Backup imported'),
+            content: Text('Please restart the app.'),
+          ),
         );
       }
     } catch (e) {
@@ -98,34 +102,34 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     final controller = TextEditingController();
     final confirmController = TextEditingController();
 
-    final result = await showDialog<String>(
+    final result = await showCupertinoDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => CupertinoAlertDialog(
         title: Text(confirm ? 'Set Backup Password' : 'Enter Backup Password'),
         content: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            const SizedBox(height: 12),
+            CupertinoTextField(
               controller: controller,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password'),
+              placeholder: 'Password',
             ),
             if (confirm) ...[
               const SizedBox(height: 12),
-              TextField(
+              CupertinoTextField(
                 controller: confirmController,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Confirm Password'),
+                placeholder: 'Confirm Password',
               ),
             ]
           ],
         ),
         actions: [
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
-          FilledButton(
+          CupertinoDialogAction(
             onPressed: () {
               if (confirm && controller.text != confirmController.text) {
                 return;
@@ -142,38 +146,58 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
   }
 
   void _showError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          )
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Backup')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Backup'),
+      ),
+      child: SafeArea(
+        child: ListView(
           children: [
-            Text('Last backup: ${_lastBackup ?? 'Never'}'),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _busy ? null : _exportBackup,
-              icon: const Icon(Icons.backup),
-              label: const Text('Export Backup'),
+            CupertinoListSection.insetGrouped(
+              children: [
+                CupertinoListTile(
+                  title: const Text('Last backup'),
+                  trailing: Text(_lastBackup ?? 'Never'),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _importBackup,
-              icon: const Icon(Icons.download),
-              label: const Text('Import Backup'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  CupertinoButton.filled(
+                    onPressed: _busy ? null : _exportBackup,
+                    child: const Text('Export Backup'),
+                  ),
+                  const SizedBox(height: 12),
+                  CupertinoButton(
+                    onPressed: _busy ? null : _importBackup,
+                    child: const Text('Import Backup'),
+                  ),
+                  if (_busy) ...[
+                    const SizedBox(height: 16),
+                    const CupertinoActivityIndicator(),
+                  ]
+                ],
+              ),
             ),
-            if (_busy) ...[
-              const SizedBox(height: 16),
-              const LinearProgressIndicator(),
-            ]
           ],
         ),
       ),

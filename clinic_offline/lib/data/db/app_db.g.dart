@@ -1768,6 +1768,841 @@ class PhotosCompanion extends UpdateCompanion<Photo> {
   }
 }
 
+class $ProceduresTable extends Procedures
+    with TableInfo<$ProceduresTable, Procedure> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProceduresTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _defaultPriceMeta = const VerificationMeta(
+    'defaultPrice',
+  );
+  @override
+  late final GeneratedColumn<int> defaultPrice = GeneratedColumn<int>(
+    'default_price',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, defaultPrice, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'procedures';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Procedure> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('default_price')) {
+      context.handle(
+        _defaultPriceMeta,
+        defaultPrice.isAcceptableOrUnknown(
+          data['default_price']!,
+          _defaultPriceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Procedure map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Procedure(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      defaultPrice: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}default_price'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ProceduresTable createAlias(String alias) {
+    return $ProceduresTable(attachedDatabase, alias);
+  }
+}
+
+class Procedure extends DataClass implements Insertable<Procedure> {
+  final String id;
+  final String name;
+  final int? defaultPrice;
+  final DateTime createdAt;
+  const Procedure({
+    required this.id,
+    required this.name,
+    this.defaultPrice,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || defaultPrice != null) {
+      map['default_price'] = Variable<int>(defaultPrice);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ProceduresCompanion toCompanion(bool nullToAbsent) {
+    return ProceduresCompanion(
+      id: Value(id),
+      name: Value(name),
+      defaultPrice: defaultPrice == null && nullToAbsent
+          ? const Value.absent()
+          : Value(defaultPrice),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Procedure.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Procedure(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      defaultPrice: serializer.fromJson<int?>(json['defaultPrice']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'defaultPrice': serializer.toJson<int?>(defaultPrice),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Procedure copyWith({
+    String? id,
+    String? name,
+    Value<int?> defaultPrice = const Value.absent(),
+    DateTime? createdAt,
+  }) => Procedure(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    defaultPrice: defaultPrice.present ? defaultPrice.value : this.defaultPrice,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Procedure copyWithCompanion(ProceduresCompanion data) {
+    return Procedure(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      defaultPrice: data.defaultPrice.present
+          ? data.defaultPrice.value
+          : this.defaultPrice,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Procedure(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('defaultPrice: $defaultPrice, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, defaultPrice, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Procedure &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.defaultPrice == this.defaultPrice &&
+          other.createdAt == this.createdAt);
+}
+
+class ProceduresCompanion extends UpdateCompanion<Procedure> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<int?> defaultPrice;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const ProceduresCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.defaultPrice = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProceduresCompanion.insert({
+    required String id,
+    required String name,
+    this.defaultPrice = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       createdAt = Value(createdAt);
+  static Insertable<Procedure> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<int>? defaultPrice,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (defaultPrice != null) 'default_price': defaultPrice,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProceduresCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<int?>? defaultPrice,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ProceduresCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      defaultPrice: defaultPrice ?? this.defaultPrice,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (defaultPrice.present) {
+      map['default_price'] = Variable<int>(defaultPrice.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProceduresCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('defaultPrice: $defaultPrice, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $VisitProceduresTable extends VisitProcedures
+    with TableInfo<$VisitProceduresTable, VisitProcedure> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VisitProceduresTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _visitIdMeta = const VerificationMeta(
+    'visitId',
+  );
+  @override
+  late final GeneratedColumn<String> visitId = GeneratedColumn<String>(
+    'visit_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES visits (id)',
+    ),
+  );
+  static const VerificationMeta _procedureIdMeta = const VerificationMeta(
+    'procedureId',
+  );
+  @override
+  late final GeneratedColumn<String> procedureId = GeneratedColumn<String>(
+    'procedure_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES procedures (id)',
+    ),
+  );
+  static const VerificationMeta _quantityMeta = const VerificationMeta(
+    'quantity',
+  );
+  @override
+  late final GeneratedColumn<int> quantity = GeneratedColumn<int>(
+    'quantity',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _unitPriceMeta = const VerificationMeta(
+    'unitPrice',
+  );
+  @override
+  late final GeneratedColumn<int> unitPrice = GeneratedColumn<int>(
+    'unit_price',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _discountMeta = const VerificationMeta(
+    'discount',
+  );
+  @override
+  late final GeneratedColumn<int> discount = GeneratedColumn<int>(
+    'discount',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    visitId,
+    procedureId,
+    quantity,
+    unitPrice,
+    discount,
+    notes,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'visit_procedures';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VisitProcedure> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('visit_id')) {
+      context.handle(
+        _visitIdMeta,
+        visitId.isAcceptableOrUnknown(data['visit_id']!, _visitIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_visitIdMeta);
+    }
+    if (data.containsKey('procedure_id')) {
+      context.handle(
+        _procedureIdMeta,
+        procedureId.isAcceptableOrUnknown(
+          data['procedure_id']!,
+          _procedureIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_procedureIdMeta);
+    }
+    if (data.containsKey('quantity')) {
+      context.handle(
+        _quantityMeta,
+        quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta),
+      );
+    }
+    if (data.containsKey('unit_price')) {
+      context.handle(
+        _unitPriceMeta,
+        unitPrice.isAcceptableOrUnknown(data['unit_price']!, _unitPriceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_unitPriceMeta);
+    }
+    if (data.containsKey('discount')) {
+      context.handle(
+        _discountMeta,
+        discount.isAcceptableOrUnknown(data['discount']!, _discountMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  VisitProcedure map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VisitProcedure(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      visitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}visit_id'],
+      )!,
+      procedureId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}procedure_id'],
+      )!,
+      quantity: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}quantity'],
+      )!,
+      unitPrice: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}unit_price'],
+      )!,
+      discount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}discount'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $VisitProceduresTable createAlias(String alias) {
+    return $VisitProceduresTable(attachedDatabase, alias);
+  }
+}
+
+class VisitProcedure extends DataClass implements Insertable<VisitProcedure> {
+  final String id;
+  final String visitId;
+  final String procedureId;
+  final int quantity;
+  final int unitPrice;
+  final int? discount;
+  final String? notes;
+  final DateTime createdAt;
+  const VisitProcedure({
+    required this.id,
+    required this.visitId,
+    required this.procedureId,
+    required this.quantity,
+    required this.unitPrice,
+    this.discount,
+    this.notes,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['visit_id'] = Variable<String>(visitId);
+    map['procedure_id'] = Variable<String>(procedureId);
+    map['quantity'] = Variable<int>(quantity);
+    map['unit_price'] = Variable<int>(unitPrice);
+    if (!nullToAbsent || discount != null) {
+      map['discount'] = Variable<int>(discount);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  VisitProceduresCompanion toCompanion(bool nullToAbsent) {
+    return VisitProceduresCompanion(
+      id: Value(id),
+      visitId: Value(visitId),
+      procedureId: Value(procedureId),
+      quantity: Value(quantity),
+      unitPrice: Value(unitPrice),
+      discount: discount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(discount),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory VisitProcedure.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VisitProcedure(
+      id: serializer.fromJson<String>(json['id']),
+      visitId: serializer.fromJson<String>(json['visitId']),
+      procedureId: serializer.fromJson<String>(json['procedureId']),
+      quantity: serializer.fromJson<int>(json['quantity']),
+      unitPrice: serializer.fromJson<int>(json['unitPrice']),
+      discount: serializer.fromJson<int?>(json['discount']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'visitId': serializer.toJson<String>(visitId),
+      'procedureId': serializer.toJson<String>(procedureId),
+      'quantity': serializer.toJson<int>(quantity),
+      'unitPrice': serializer.toJson<int>(unitPrice),
+      'discount': serializer.toJson<int?>(discount),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  VisitProcedure copyWith({
+    String? id,
+    String? visitId,
+    String? procedureId,
+    int? quantity,
+    int? unitPrice,
+    Value<int?> discount = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+  }) => VisitProcedure(
+    id: id ?? this.id,
+    visitId: visitId ?? this.visitId,
+    procedureId: procedureId ?? this.procedureId,
+    quantity: quantity ?? this.quantity,
+    unitPrice: unitPrice ?? this.unitPrice,
+    discount: discount.present ? discount.value : this.discount,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  VisitProcedure copyWithCompanion(VisitProceduresCompanion data) {
+    return VisitProcedure(
+      id: data.id.present ? data.id.value : this.id,
+      visitId: data.visitId.present ? data.visitId.value : this.visitId,
+      procedureId: data.procedureId.present
+          ? data.procedureId.value
+          : this.procedureId,
+      quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      unitPrice: data.unitPrice.present ? data.unitPrice.value : this.unitPrice,
+      discount: data.discount.present ? data.discount.value : this.discount,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VisitProcedure(')
+          ..write('id: $id, ')
+          ..write('visitId: $visitId, ')
+          ..write('procedureId: $procedureId, ')
+          ..write('quantity: $quantity, ')
+          ..write('unitPrice: $unitPrice, ')
+          ..write('discount: $discount, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    visitId,
+    procedureId,
+    quantity,
+    unitPrice,
+    discount,
+    notes,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VisitProcedure &&
+          other.id == this.id &&
+          other.visitId == this.visitId &&
+          other.procedureId == this.procedureId &&
+          other.quantity == this.quantity &&
+          other.unitPrice == this.unitPrice &&
+          other.discount == this.discount &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt);
+}
+
+class VisitProceduresCompanion extends UpdateCompanion<VisitProcedure> {
+  final Value<String> id;
+  final Value<String> visitId;
+  final Value<String> procedureId;
+  final Value<int> quantity;
+  final Value<int> unitPrice;
+  final Value<int?> discount;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const VisitProceduresCompanion({
+    this.id = const Value.absent(),
+    this.visitId = const Value.absent(),
+    this.procedureId = const Value.absent(),
+    this.quantity = const Value.absent(),
+    this.unitPrice = const Value.absent(),
+    this.discount = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VisitProceduresCompanion.insert({
+    required String id,
+    required String visitId,
+    required String procedureId,
+    this.quantity = const Value.absent(),
+    required int unitPrice,
+    this.discount = const Value.absent(),
+    this.notes = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       visitId = Value(visitId),
+       procedureId = Value(procedureId),
+       unitPrice = Value(unitPrice),
+       createdAt = Value(createdAt);
+  static Insertable<VisitProcedure> custom({
+    Expression<String>? id,
+    Expression<String>? visitId,
+    Expression<String>? procedureId,
+    Expression<int>? quantity,
+    Expression<int>? unitPrice,
+    Expression<int>? discount,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (visitId != null) 'visit_id': visitId,
+      if (procedureId != null) 'procedure_id': procedureId,
+      if (quantity != null) 'quantity': quantity,
+      if (unitPrice != null) 'unit_price': unitPrice,
+      if (discount != null) 'discount': discount,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VisitProceduresCompanion copyWith({
+    Value<String>? id,
+    Value<String>? visitId,
+    Value<String>? procedureId,
+    Value<int>? quantity,
+    Value<int>? unitPrice,
+    Value<int?>? discount,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return VisitProceduresCompanion(
+      id: id ?? this.id,
+      visitId: visitId ?? this.visitId,
+      procedureId: procedureId ?? this.procedureId,
+      quantity: quantity ?? this.quantity,
+      unitPrice: unitPrice ?? this.unitPrice,
+      discount: discount ?? this.discount,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (visitId.present) {
+      map['visit_id'] = Variable<String>(visitId.value);
+    }
+    if (procedureId.present) {
+      map['procedure_id'] = Variable<String>(procedureId.value);
+    }
+    if (quantity.present) {
+      map['quantity'] = Variable<int>(quantity.value);
+    }
+    if (unitPrice.present) {
+      map['unit_price'] = Variable<int>(unitPrice.value);
+    }
+    if (discount.present) {
+      map['discount'] = Variable<int>(discount.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VisitProceduresCompanion(')
+          ..write('id: $id, ')
+          ..write('visitId: $visitId, ')
+          ..write('procedureId: $procedureId, ')
+          ..write('quantity: $quantity, ')
+          ..write('unitPrice: $unitPrice, ')
+          ..write('discount: $discount, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1775,6 +2610,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $VisitsTable visits = $VisitsTable(this);
   late final $AppointmentsTable appointments = $AppointmentsTable(this);
   late final $PhotosTable photos = $PhotosTable(this);
+  late final $ProceduresTable procedures = $ProceduresTable(this);
+  late final $VisitProceduresTable visitProcedures = $VisitProceduresTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1784,6 +2623,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     visits,
     appointments,
     photos,
+    procedures,
+    visitProcedures,
   ];
 }
 
@@ -2368,6 +3209,26 @@ final class $$VisitsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$VisitProceduresTable, List<VisitProcedure>>
+  _visitProceduresRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.visitProcedures,
+    aliasName: $_aliasNameGenerator(db.visits.id, db.visitProcedures.visitId),
+  );
+
+  $$VisitProceduresTableProcessedTableManager get visitProceduresRefs {
+    final manager = $$VisitProceduresTableTableManager(
+      $_db,
+      $_db.visitProcedures,
+    ).filter((f) => f.visitId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _visitProceduresRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$VisitsTableFilterComposer
@@ -2443,6 +3304,31 @@ class $$VisitsTableFilterComposer
           }) => $$PhotosTableFilterComposer(
             $db: $db,
             $table: $db.photos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> visitProceduresRefs(
+    Expression<bool> Function($$VisitProceduresTableFilterComposer f) f,
+  ) {
+    final $$VisitProceduresTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.visitProcedures,
+      getReferencedColumn: (t) => t.visitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisitProceduresTableFilterComposer(
+            $db: $db,
+            $table: $db.visitProcedures,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2582,6 +3468,31 @@ class $$VisitsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> visitProceduresRefs<T extends Object>(
+    Expression<T> Function($$VisitProceduresTableAnnotationComposer a) f,
+  ) {
+    final $$VisitProceduresTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.visitProcedures,
+      getReferencedColumn: (t) => t.visitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisitProceduresTableAnnotationComposer(
+            $db: $db,
+            $table: $db.visitProcedures,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$VisitsTableTableManager
@@ -2597,7 +3508,11 @@ class $$VisitsTableTableManager
           $$VisitsTableUpdateCompanionBuilder,
           (Visit, $$VisitsTableReferences),
           Visit,
-          PrefetchHooks Function({bool patientId, bool photosRefs})
+          PrefetchHooks Function({
+            bool patientId,
+            bool photosRefs,
+            bool visitProceduresRefs,
+          })
         > {
   $$VisitsTableTableManager(_$AppDatabase db, $VisitsTable table)
     : super(
@@ -2652,60 +3567,90 @@ class $$VisitsTableTableManager
                     (e.readTable(table), $$VisitsTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({patientId = false, photosRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (photosRefs) db.photos],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (patientId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.patientId,
-                                referencedTable: $$VisitsTableReferences
-                                    ._patientIdTable(db),
-                                referencedColumn: $$VisitsTableReferences
-                                    ._patientIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({
+                patientId = false,
+                photosRefs = false,
+                visitProceduresRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (photosRefs) db.photos,
+                    if (visitProceduresRefs) db.visitProcedures,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (patientId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.patientId,
+                                    referencedTable: $$VisitsTableReferences
+                                        ._patientIdTable(db),
+                                    referencedColumn: $$VisitsTableReferences
+                                        ._patientIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (photosRefs)
+                        await $_getPrefetchedData<Visit, $VisitsTable, Photo>(
+                          currentTable: table,
+                          referencedTable: $$VisitsTableReferences
+                              ._photosRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$VisitsTableReferences(db, table, p0).photosRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.visitId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (visitProceduresRefs)
+                        await $_getPrefetchedData<
+                          Visit,
+                          $VisitsTable,
+                          VisitProcedure
+                        >(
+                          currentTable: table,
+                          referencedTable: $$VisitsTableReferences
+                              ._visitProceduresRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$VisitsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).visitProceduresRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.visitId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (photosRefs)
-                    await $_getPrefetchedData<Visit, $VisitsTable, Photo>(
-                      currentTable: table,
-                      referencedTable: $$VisitsTableReferences._photosRefsTable(
-                        db,
-                      ),
-                      managerFromTypedResult: (p0) =>
-                          $$VisitsTableReferences(db, table, p0).photosRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.visitId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -2722,7 +3667,11 @@ typedef $$VisitsTableProcessedTableManager =
       $$VisitsTableUpdateCompanionBuilder,
       (Visit, $$VisitsTableReferences),
       Visit,
-      PrefetchHooks Function({bool patientId, bool photosRefs})
+      PrefetchHooks Function({
+        bool patientId,
+        bool photosRefs,
+        bool visitProceduresRefs,
+      })
     >;
 typedef $$AppointmentsTableCreateCompanionBuilder =
     AppointmentsCompanion Function({
@@ -3527,6 +4476,773 @@ typedef $$PhotosTableProcessedTableManager =
       Photo,
       PrefetchHooks Function({bool patientId, bool visitId})
     >;
+typedef $$ProceduresTableCreateCompanionBuilder =
+    ProceduresCompanion Function({
+      required String id,
+      required String name,
+      Value<int?> defaultPrice,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$ProceduresTableUpdateCompanionBuilder =
+    ProceduresCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<int?> defaultPrice,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$ProceduresTableReferences
+    extends BaseReferences<_$AppDatabase, $ProceduresTable, Procedure> {
+  $$ProceduresTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$VisitProceduresTable, List<VisitProcedure>>
+  _visitProceduresRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.visitProcedures,
+    aliasName: $_aliasNameGenerator(
+      db.procedures.id,
+      db.visitProcedures.procedureId,
+    ),
+  );
+
+  $$VisitProceduresTableProcessedTableManager get visitProceduresRefs {
+    final manager = $$VisitProceduresTableTableManager(
+      $_db,
+      $_db.visitProcedures,
+    ).filter((f) => f.procedureId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _visitProceduresRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ProceduresTableFilterComposer
+    extends Composer<_$AppDatabase, $ProceduresTable> {
+  $$ProceduresTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get defaultPrice => $composableBuilder(
+    column: $table.defaultPrice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> visitProceduresRefs(
+    Expression<bool> Function($$VisitProceduresTableFilterComposer f) f,
+  ) {
+    final $$VisitProceduresTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.visitProcedures,
+      getReferencedColumn: (t) => t.procedureId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisitProceduresTableFilterComposer(
+            $db: $db,
+            $table: $db.visitProcedures,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ProceduresTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProceduresTable> {
+  $$ProceduresTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get defaultPrice => $composableBuilder(
+    column: $table.defaultPrice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProceduresTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProceduresTable> {
+  $$ProceduresTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get defaultPrice => $composableBuilder(
+    column: $table.defaultPrice,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> visitProceduresRefs<T extends Object>(
+    Expression<T> Function($$VisitProceduresTableAnnotationComposer a) f,
+  ) {
+    final $$VisitProceduresTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.visitProcedures,
+      getReferencedColumn: (t) => t.procedureId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisitProceduresTableAnnotationComposer(
+            $db: $db,
+            $table: $db.visitProcedures,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ProceduresTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProceduresTable,
+          Procedure,
+          $$ProceduresTableFilterComposer,
+          $$ProceduresTableOrderingComposer,
+          $$ProceduresTableAnnotationComposer,
+          $$ProceduresTableCreateCompanionBuilder,
+          $$ProceduresTableUpdateCompanionBuilder,
+          (Procedure, $$ProceduresTableReferences),
+          Procedure,
+          PrefetchHooks Function({bool visitProceduresRefs})
+        > {
+  $$ProceduresTableTableManager(_$AppDatabase db, $ProceduresTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProceduresTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProceduresTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProceduresTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int?> defaultPrice = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProceduresCompanion(
+                id: id,
+                name: name,
+                defaultPrice: defaultPrice,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<int?> defaultPrice = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ProceduresCompanion.insert(
+                id: id,
+                name: name,
+                defaultPrice: defaultPrice,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ProceduresTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({visitProceduresRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (visitProceduresRefs) db.visitProcedures,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (visitProceduresRefs)
+                    await $_getPrefetchedData<
+                      Procedure,
+                      $ProceduresTable,
+                      VisitProcedure
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ProceduresTableReferences
+                          ._visitProceduresRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$ProceduresTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).visitProceduresRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.procedureId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ProceduresTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProceduresTable,
+      Procedure,
+      $$ProceduresTableFilterComposer,
+      $$ProceduresTableOrderingComposer,
+      $$ProceduresTableAnnotationComposer,
+      $$ProceduresTableCreateCompanionBuilder,
+      $$ProceduresTableUpdateCompanionBuilder,
+      (Procedure, $$ProceduresTableReferences),
+      Procedure,
+      PrefetchHooks Function({bool visitProceduresRefs})
+    >;
+typedef $$VisitProceduresTableCreateCompanionBuilder =
+    VisitProceduresCompanion Function({
+      required String id,
+      required String visitId,
+      required String procedureId,
+      Value<int> quantity,
+      required int unitPrice,
+      Value<int?> discount,
+      Value<String?> notes,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$VisitProceduresTableUpdateCompanionBuilder =
+    VisitProceduresCompanion Function({
+      Value<String> id,
+      Value<String> visitId,
+      Value<String> procedureId,
+      Value<int> quantity,
+      Value<int> unitPrice,
+      Value<int?> discount,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$VisitProceduresTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $VisitProceduresTable, VisitProcedure> {
+  $$VisitProceduresTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $VisitsTable _visitIdTable(_$AppDatabase db) => db.visits.createAlias(
+    $_aliasNameGenerator(db.visitProcedures.visitId, db.visits.id),
+  );
+
+  $$VisitsTableProcessedTableManager get visitId {
+    final $_column = $_itemColumn<String>('visit_id')!;
+
+    final manager = $$VisitsTableTableManager(
+      $_db,
+      $_db.visits,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_visitIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ProceduresTable _procedureIdTable(_$AppDatabase db) =>
+      db.procedures.createAlias(
+        $_aliasNameGenerator(db.visitProcedures.procedureId, db.procedures.id),
+      );
+
+  $$ProceduresTableProcessedTableManager get procedureId {
+    final $_column = $_itemColumn<String>('procedure_id')!;
+
+    final manager = $$ProceduresTableTableManager(
+      $_db,
+      $_db.procedures,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_procedureIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$VisitProceduresTableFilterComposer
+    extends Composer<_$AppDatabase, $VisitProceduresTable> {
+  $$VisitProceduresTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get quantity => $composableBuilder(
+    column: $table.quantity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get unitPrice => $composableBuilder(
+    column: $table.unitPrice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get discount => $composableBuilder(
+    column: $table.discount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$VisitsTableFilterComposer get visitId {
+    final $$VisitsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.visitId,
+      referencedTable: $db.visits,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisitsTableFilterComposer(
+            $db: $db,
+            $table: $db.visits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ProceduresTableFilterComposer get procedureId {
+    final $$ProceduresTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.procedureId,
+      referencedTable: $db.procedures,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProceduresTableFilterComposer(
+            $db: $db,
+            $table: $db.procedures,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VisitProceduresTableOrderingComposer
+    extends Composer<_$AppDatabase, $VisitProceduresTable> {
+  $$VisitProceduresTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get quantity => $composableBuilder(
+    column: $table.quantity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get unitPrice => $composableBuilder(
+    column: $table.unitPrice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get discount => $composableBuilder(
+    column: $table.discount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$VisitsTableOrderingComposer get visitId {
+    final $$VisitsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.visitId,
+      referencedTable: $db.visits,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisitsTableOrderingComposer(
+            $db: $db,
+            $table: $db.visits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ProceduresTableOrderingComposer get procedureId {
+    final $$ProceduresTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.procedureId,
+      referencedTable: $db.procedures,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProceduresTableOrderingComposer(
+            $db: $db,
+            $table: $db.procedures,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VisitProceduresTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VisitProceduresTable> {
+  $$VisitProceduresTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get quantity =>
+      $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<int> get unitPrice =>
+      $composableBuilder(column: $table.unitPrice, builder: (column) => column);
+
+  GeneratedColumn<int> get discount =>
+      $composableBuilder(column: $table.discount, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$VisitsTableAnnotationComposer get visitId {
+    final $$VisitsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.visitId,
+      referencedTable: $db.visits,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VisitsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.visits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ProceduresTableAnnotationComposer get procedureId {
+    final $$ProceduresTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.procedureId,
+      referencedTable: $db.procedures,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProceduresTableAnnotationComposer(
+            $db: $db,
+            $table: $db.procedures,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$VisitProceduresTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VisitProceduresTable,
+          VisitProcedure,
+          $$VisitProceduresTableFilterComposer,
+          $$VisitProceduresTableOrderingComposer,
+          $$VisitProceduresTableAnnotationComposer,
+          $$VisitProceduresTableCreateCompanionBuilder,
+          $$VisitProceduresTableUpdateCompanionBuilder,
+          (VisitProcedure, $$VisitProceduresTableReferences),
+          VisitProcedure,
+          PrefetchHooks Function({bool visitId, bool procedureId})
+        > {
+  $$VisitProceduresTableTableManager(
+    _$AppDatabase db,
+    $VisitProceduresTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VisitProceduresTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$VisitProceduresTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$VisitProceduresTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> visitId = const Value.absent(),
+                Value<String> procedureId = const Value.absent(),
+                Value<int> quantity = const Value.absent(),
+                Value<int> unitPrice = const Value.absent(),
+                Value<int?> discount = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VisitProceduresCompanion(
+                id: id,
+                visitId: visitId,
+                procedureId: procedureId,
+                quantity: quantity,
+                unitPrice: unitPrice,
+                discount: discount,
+                notes: notes,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String visitId,
+                required String procedureId,
+                Value<int> quantity = const Value.absent(),
+                required int unitPrice,
+                Value<int?> discount = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => VisitProceduresCompanion.insert(
+                id: id,
+                visitId: visitId,
+                procedureId: procedureId,
+                quantity: quantity,
+                unitPrice: unitPrice,
+                discount: discount,
+                notes: notes,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$VisitProceduresTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({visitId = false, procedureId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (visitId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.visitId,
+                                referencedTable:
+                                    $$VisitProceduresTableReferences
+                                        ._visitIdTable(db),
+                                referencedColumn:
+                                    $$VisitProceduresTableReferences
+                                        ._visitIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (procedureId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.procedureId,
+                                referencedTable:
+                                    $$VisitProceduresTableReferences
+                                        ._procedureIdTable(db),
+                                referencedColumn:
+                                    $$VisitProceduresTableReferences
+                                        ._procedureIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$VisitProceduresTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VisitProceduresTable,
+      VisitProcedure,
+      $$VisitProceduresTableFilterComposer,
+      $$VisitProceduresTableOrderingComposer,
+      $$VisitProceduresTableAnnotationComposer,
+      $$VisitProceduresTableCreateCompanionBuilder,
+      $$VisitProceduresTableUpdateCompanionBuilder,
+      (VisitProcedure, $$VisitProceduresTableReferences),
+      VisitProcedure,
+      PrefetchHooks Function({bool visitId, bool procedureId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3539,4 +5255,8 @@ class $AppDatabaseManager {
       $$AppointmentsTableTableManager(_db, _db.appointments);
   $$PhotosTableTableManager get photos =>
       $$PhotosTableTableManager(_db, _db.photos);
+  $$ProceduresTableTableManager get procedures =>
+      $$ProceduresTableTableManager(_db, _db.procedures);
+  $$VisitProceduresTableTableManager get visitProcedures =>
+      $$VisitProceduresTableTableManager(_db, _db.visitProcedures);
 }

@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../providers.dart';
 
@@ -17,6 +18,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
   bool _loading = false;
   bool _hasPin = false;
   String? _error;
+  bool _lockEnabled = true;
 
   @override
   void initState() {
@@ -25,9 +27,18 @@ class _LockScreenState extends ConsumerState<LockScreen> {
   }
 
   Future<void> _init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _lockEnabled = prefs.getBool('app_lock_enabled') ?? true;
+    if (!_lockEnabled && mounted) {
+      context.go('/');
+      return;
+    }
+
     final service = ref.read(appLockServiceProvider);
     final hasPin = await service.hasPin();
-    setState(() => _hasPin = hasPin);
+    if (mounted) {
+      setState(() => _hasPin = hasPin);
+    }
     final canBio = await service.canCheckBiometrics();
     if (canBio) {
       await _authenticateBiometric();
@@ -100,9 +111,11 @@ class _LockScreenState extends ConsumerState<LockScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      body: SafeArea(
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Clinic Offline'),
+      ),
+      child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Center(
@@ -110,52 +123,44 @@ class _LockScreenState extends ConsumerState<LockScreen> {
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Clinic Offline',
-                    style: theme.textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
                   Text(
                     _hasPin
                         ? 'Enter PIN or use biometrics.'
                         : 'Set a local PIN for offline access.',
                     textAlign: TextAlign.center,
+                    style: CupertinoTheme.of(context).textTheme.textStyle,
                   ),
                   const SizedBox(height: 24),
-                  TextField(
+                  CupertinoTextField(
                     controller: _pinController,
                     keyboardType: TextInputType.number,
                     obscureText: true,
-                    decoration: const InputDecoration(labelText: 'PIN'),
+                    placeholder: 'PIN',
                   ),
                   if (!_hasPin) ...[
                     const SizedBox(height: 12),
-                    TextField(
+                    CupertinoTextField(
                       controller: _confirmController,
                       keyboardType: TextInputType.number,
                       obscureText: true,
-                      decoration:
-                          const InputDecoration(labelText: 'Confirm PIN'),
+                      placeholder: 'Confirm PIN',
                     ),
                   ],
                   if (_error != null) ...[
                     const SizedBox(height: 8),
                     Text(
                       _error!,
-                      style: TextStyle(color: theme.colorScheme.error),
-                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: CupertinoColors.systemRed),
                     ),
                   ],
                   const SizedBox(height: 16),
-                  FilledButton(
+                  CupertinoButton.filled(
                     onPressed: _loading ? null : _submitPin,
                     child: Text(_hasPin ? 'Unlock' : 'Set PIN'),
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton(
+                  CupertinoButton(
                     onPressed: _loading ? null : _authenticateBiometric,
                     child: const Text('Use Face ID / Touch ID'),
                   ),

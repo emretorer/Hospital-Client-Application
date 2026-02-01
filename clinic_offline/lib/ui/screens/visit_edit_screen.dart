@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:drift/drift.dart' show Value;
-import 'package:uuid/uuid.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../data/db/app_db.dart';
 import '../../providers.dart';
@@ -18,13 +18,12 @@ class VisitEditScreen extends ConsumerStatefulWidget {
 }
 
 class _VisitEditScreenState extends ConsumerState<VisitEditScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _complaintController = TextEditingController();
   final _diagnosisController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime _visitAt = DateTime.now();
   final List<_PendingPhoto> _photos = [];
-  static final DateFormat _trFormat = DateFormat('dd.MM.yyyy HH:mm');
+  static final DateFormat _trFormat = DateFormat('dd.MM.yyyy HH:mm', 'tr_TR');
 
   @override
   void dispose() {
@@ -36,22 +35,23 @@ class _VisitEditScreenState extends ConsumerState<VisitEditScreen> {
 
   Future<void> _pickPhoto(String kind) async {
     final picker = ImagePicker();
-    final source = await showModalBottomSheet<ImageSource>(
+    final source = await showCupertinoModalPopup<ImageSource>(
       context: context,
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
-              onTap: () => Navigator.of(context).pop(ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Photo Library'),
-              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
-            ),
-          ],
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('Add Photo'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop(ImageSource.camera),
+            child: const Text('Camera'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop(ImageSource.gallery),
+            child: const Text('Photo Library'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
         ),
       ),
     );
@@ -66,8 +66,6 @@ class _VisitEditScreenState extends ConsumerState<VisitEditScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-
     final visitId = const Uuid().v4();
     final visitsRepo = ref.read(visitsRepositoryProvider);
     final photosRepo = ref.read(photosRepositoryProvider);
@@ -120,72 +118,83 @@ class _VisitEditScreenState extends ConsumerState<VisitEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('New Visit')),
-      body: Form(
-        key: _formKey,
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('New Visit'),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _save,
+          child: const Text('Save'),
+        ),
+      ),
+      child: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
           children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text('Visit date: ${_formatTurkeyTime(_visitAt)}'),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime.now(),
-                  initialDate: _visitAt,
-                );
-                if (picked != null) {
-                  setState(() => _visitAt = picked);
-                }
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _complaintController,
-              decoration: const InputDecoration(labelText: 'Complaint'),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _diagnosisController,
-              decoration: const InputDecoration(labelText: 'Diagnosis'),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(labelText: 'Notes'),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            Text('Photos (${_photos.length})'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
+            CupertinoFormSection.insetGrouped(
               children: [
-                OutlinedButton.icon(
-                  onPressed: () => _pickPhoto('before'),
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Add Before'),
+                CupertinoFormRow(
+                  prefix: const Text('Visit date'),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () async {
+                      final picked = await showCupertinoModalPopup<DateTime>(
+                        context: context,
+                        builder: (context) => _DatePickerSheet(initial: _visitAt),
+                      );
+                      if (picked != null) {
+                        setState(() => _visitAt = picked);
+                      }
+                    },
+                    child: Text(_formatTurkeyTime(_visitAt)),
+                  ),
                 ),
-                OutlinedButton.icon(
-                  onPressed: () => _pickPhoto('after'),
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Add After'),
+                CupertinoFormRow(
+                  prefix: const Text('Complaint'),
+                  child: CupertinoTextField(
+                    controller: _complaintController,
+                    placeholder: 'Optional',
+                  ),
+                ),
+                CupertinoFormRow(
+                  prefix: const Text('Diagnosis'),
+                  child: CupertinoTextField(
+                    controller: _diagnosisController,
+                    placeholder: 'Optional',
+                  ),
+                ),
+                CupertinoFormRow(
+                  prefix: const Text('Notes'),
+                  child: CupertinoTextField(
+                    controller: _notesController,
+                    placeholder: 'Optional',
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _save,
-              child: const Text('Save Visit'),
+            CupertinoFormSection.insetGrouped(
+              header: Text('Photos (${_photos.length})'),
+              children: [
+                CupertinoListTile(
+                  title: const Text('Add Before Photo'),
+                  trailing: const Icon(CupertinoIcons.camera),
+                  onTap: () => _pickPhoto('before'),
+                ),
+                CupertinoListTile(
+                  title: const Text('Add After Photo'),
+                  trailing: const Icon(CupertinoIcons.camera),
+                  onTap: () => _pickPhoto('after'),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _formatTurkeyTime(DateTime value) {
+    final trTime = value.toUtc().add(const Duration(hours: 3));
+    return _trFormat.format(trTime);
   }
 }
 
@@ -196,7 +205,53 @@ class _PendingPhoto {
   final XFile file;
 }
 
-String _formatTurkeyTime(DateTime value) {
-  final trTime = value.toUtc().add(const Duration(hours: 3));
-  return '${_VisitEditScreenState._trFormat.format(trTime)} (TRT)';
+class _DatePickerSheet extends StatefulWidget {
+  const _DatePickerSheet({required this.initial});
+
+  final DateTime initial;
+
+  @override
+  State<_DatePickerSheet> createState() => _DatePickerSheetState();
+}
+
+class _DatePickerSheetState extends State<_DatePickerSheet> {
+  late DateTime _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initial;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 280,
+      color: CupertinoColors.systemBackground,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CupertinoButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              CupertinoButton(
+                onPressed: () => Navigator.of(context).pop(_value),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+          Expanded(
+            child: CupertinoDatePicker(
+              mode: CupertinoDatePickerMode.dateAndTime,
+              initialDateTime: _value,
+              onDateTimeChanged: (value) => setState(() => _value = value),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -8,7 +8,7 @@ import 'tables.dart';
 
 part 'app_db.g.dart';
 
-@DriftDatabase(tables: [Patients, Visits, Appointments, Photos])
+@DriftDatabase(tables: [Patients, Visits, Appointments, Photos, Procedures, VisitProcedures])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(this._paths) : super(_openConnection(_paths));
 
@@ -18,7 +18,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : _paths = const AppPaths();
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -30,10 +30,22 @@ class AppDatabase extends _$AppDatabase {
               'CREATE INDEX appointments_scheduledAt ON appointments (scheduled_at)');
           await customStatement(
               'CREATE INDEX photos_patient_takenAt ON photos (patient_id, taken_at DESC)');
+          await customStatement(
+              'CREATE INDEX visit_procedures_visitId ON visit_procedures (visit_id)');
+          await customStatement(
+              'CREATE INDEX visit_procedures_procedureId ON visit_procedures (procedure_id)');
         },
         onUpgrade: (m, from, to) async {
           if (from < 1) {
             await m.createAll();
+          }
+          if (from < 2) {
+            await m.createTable(procedures);
+            await m.createTable(visitProcedures);
+            await customStatement(
+                'CREATE INDEX visit_procedures_visitId ON visit_procedures (visit_id)');
+            await customStatement(
+                'CREATE INDEX visit_procedures_procedureId ON visit_procedures (procedure_id)');
           }
         },
       );

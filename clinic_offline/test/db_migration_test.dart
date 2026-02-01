@@ -7,6 +7,8 @@ void main() {
   test('db migration smoke test', () async {
     final db = AppDatabase.test(NativeDatabase.memory());
     await db.customSelect('SELECT 1').get();
+    await db.customSelect('SELECT 1 FROM procedures LIMIT 1').get();
+    await db.customSelect('SELECT 1 FROM visit_procedures LIMIT 1').get();
     await db.close();
   });
 }
