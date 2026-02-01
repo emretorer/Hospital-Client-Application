@@ -5,6 +5,8 @@ import 'data/repositories/appointments_repository.dart';
 import 'data/repositories/analytics_repository.dart';
 import 'data/repositories/patients_repository.dart';
 import 'data/repositories/photos_repository.dart';
+import 'data/repositories/product_usages_repository.dart';
+import 'data/repositories/products_repository.dart';
 import 'data/repositories/procedures_repository.dart';
 import 'data/repositories/visit_procedures_repository.dart';
 import 'data/repositories/visits_repository.dart';
@@ -36,6 +38,14 @@ final appointmentsRepositoryProvider = Provider<AppointmentsRepository>((ref) {
 
 final photosRepositoryProvider = Provider<PhotosRepository>((ref) {
   return PhotosRepository(ref.watch(databaseProvider));
+});
+
+final productsRepositoryProvider = Provider<ProductsRepository>((ref) {
+  return ProductsRepository(ref.watch(databaseProvider));
+});
+
+final productUsagesRepositoryProvider = Provider<ProductUsagesRepository>((ref) {
+  return ProductUsagesRepository(ref.watch(databaseProvider));
 });
 
 final proceduresRepositoryProvider = Provider<ProceduresRepository>((ref) {

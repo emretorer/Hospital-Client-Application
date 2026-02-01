@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'appointments_screen.dart';
 import 'backup_screen.dart';
 import 'patients_screen.dart';
+import 'products_screen.dart';
 import 'revenue_screen.dart';
 import 'settings_screen.dart';
 
@@ -26,6 +27,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.calendar),
             label: 'Appointments',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.cube_box),
+            label: 'Products',
           ),
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.chart_bar),
@@ -53,13 +58,17 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           case 2:
             return CupertinoTabView(
-              builder: (_) => const RevenueScreen(),
+              builder: (_) => const ProductsScreen(),
             );
           case 3:
             return CupertinoTabView(
-              builder: (_) => const BackupScreen(),
+              builder: (_) => const RevenueScreen(),
             );
           case 4:
+            return CupertinoTabView(
+              builder: (_) => const BackupScreen(),
+            );
+          case 5:
             return CupertinoTabView(
               builder: (_) => const SettingsScreen(),
             );

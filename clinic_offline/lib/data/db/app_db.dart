@@ -8,7 +8,18 @@ import 'tables.dart';
 
 part 'app_db.g.dart';
 
-@DriftDatabase(tables: [Patients, Visits, Appointments, Photos, Procedures, VisitProcedures])
+@DriftDatabase(
+  tables: [
+    Patients,
+    Visits,
+    Appointments,
+    Photos,
+    Products,
+    ProductUsages,
+    Procedures,
+    VisitProcedures,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(this._paths) : super(_openConnection(_paths));
 
@@ -18,7 +29,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : _paths = const AppPaths();
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -30,6 +41,12 @@ class AppDatabase extends _$AppDatabase {
               'CREATE INDEX appointments_scheduledAt ON appointments (scheduled_at)');
           await customStatement(
               'CREATE INDEX photos_patient_takenAt ON photos (patient_id, taken_at DESC)');
+          await customStatement(
+              'CREATE INDEX products_name ON products (name)');
+          await customStatement(
+              'CREATE INDEX product_usages_visitId ON product_usages (visit_id)');
+          await customStatement(
+              'CREATE INDEX product_usages_productId ON product_usages (product_id)');
           await customStatement(
               'CREATE INDEX visit_procedures_visitId ON visit_procedures (visit_id)');
           await customStatement(
@@ -46,6 +63,17 @@ class AppDatabase extends _$AppDatabase {
                 'CREATE INDEX visit_procedures_visitId ON visit_procedures (visit_id)');
             await customStatement(
                 'CREATE INDEX visit_procedures_procedureId ON visit_procedures (procedure_id)');
+          }
+          if (from < 3) {
+            await m.createTable(products);
+            await customStatement('CREATE INDEX products_name ON products (name)');
+          }
+          if (from < 4) {
+            await m.createTable(productUsages);
+            await customStatement(
+                'CREATE INDEX product_usages_visitId ON product_usages (visit_id)');
+            await customStatement(
+                'CREATE INDEX product_usages_productId ON product_usages (product_id)');
           }
         },
       );

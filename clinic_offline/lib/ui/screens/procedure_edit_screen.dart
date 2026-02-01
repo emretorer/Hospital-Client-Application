@@ -5,7 +5,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../data/db/app_db.dart';
 import '../../providers.dart';
-import '../widgets/money_format.dart';
 
 class ProcedureEditScreen extends ConsumerStatefulWidget {
   const ProcedureEditScreen({super.key, this.procedure});
@@ -19,7 +18,6 @@ class ProcedureEditScreen extends ConsumerStatefulWidget {
 
 class _ProcedureEditScreenState extends ConsumerState<ProcedureEditScreen> {
   final _nameController = TextEditingController();
-  final _priceController = TextEditingController();
 
   @override
   void initState() {
@@ -27,24 +25,18 @@ class _ProcedureEditScreenState extends ConsumerState<ProcedureEditScreen> {
     final procedure = widget.procedure;
     if (procedure != null) {
       _nameController.text = procedure.name;
-      if (procedure.defaultPrice != null) {
-        _priceController.text =
-            (procedure.defaultPrice! / 100).toStringAsFixed(2);
-      }
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _priceController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (_nameController.text.trim().isEmpty) return;
 
-    final cents = tryToCents(_priceController.text.trim());
     final repo = ref.read(proceduresRepositoryProvider);
     final id = widget.procedure?.id ?? const Uuid().v4();
 
@@ -52,7 +44,7 @@ class _ProcedureEditScreenState extends ConsumerState<ProcedureEditScreen> {
       ProceduresCompanion(
         id: Value(id),
         name: Value(_nameController.text.trim()),
-        defaultPrice: Value(cents),
+        defaultPrice: const Value(null),
         createdAt: Value(widget.procedure?.createdAt ?? DateTime.now()),
       ),
     );
@@ -83,14 +75,6 @@ class _ProcedureEditScreenState extends ConsumerState<ProcedureEditScreen> {
                   child: CupertinoTextField(
                     controller: _nameController,
                     placeholder: 'Required',
-                  ),
-                ),
-                CupertinoFormRow(
-                  prefix: const Text('Default price (\u20BA)'),
-                  child: CupertinoTextField(
-                    controller: _priceController,
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
-                    placeholder: 'Optional',
                   ),
                 ),
               ],

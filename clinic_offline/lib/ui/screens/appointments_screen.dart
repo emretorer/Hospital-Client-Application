@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../data/db/app_db.dart';
 import '../../providers.dart';
+import 'appointment_done_screen.dart';
 
 class AppointmentsScreen extends ConsumerStatefulWidget {
   const AppointmentsScreen({super.key});
@@ -190,7 +191,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.of(context).pop();
-              _updateStatus(appt, 'done');
+              _markDoneFlow(appt);
             },
             child: const Text('Mark Done'),
           ),
@@ -221,6 +222,14 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
         scheduledAt: Value(appt.scheduledAt),
         status: Value(status),
         note: Value(appt.note),
+      ),
+    );
+  }
+
+  Future<void> _markDoneFlow(Appointment appt) async {
+    await Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (_) => AppointmentDoneScreen(appointment: appt),
       ),
     );
   }

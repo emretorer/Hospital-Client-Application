@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+﻿import 'package:drift/drift.dart';
 
 import '../db/app_db.dart';
 
@@ -58,14 +58,16 @@ class PatientsRepository {
 
 String _trToUpper(String value) {
   return value
-      .replaceAll('i', 'İ')
-      .replaceAll('ı', 'I')
+      .replaceAll('i', '\u0130')
+      .replaceAll('\u0131', 'I')
       .toUpperCase();
 }
 
 String _trToLower(String value) {
   return value
-      .replaceAll('I', 'ı')
-      .replaceAll('İ', 'i')
+      .replaceAll('I', '\u0131')
+      .replaceAll('\u0130', 'i')
       .toLowerCase();
 }
+
+

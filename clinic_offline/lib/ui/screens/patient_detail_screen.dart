@@ -85,7 +85,12 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(_statusIcon(appt.status)),
+                                SizedBox(
+                                  width: 24,
+                                  child: Center(
+                                    child: Icon(_statusIcon(appt.status)),
+                                  ),
+                                ),
                                 const SizedBox(width: 6),
                                 Text(appt.status),
                               ],

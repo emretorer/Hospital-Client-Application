@@ -50,6 +50,28 @@ class Photos extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class Products extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  IntColumn get quantity => integer()();
+  IntColumn get unitCost => integer()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class ProductUsages extends Table {
+  TextColumn get id => text()();
+  TextColumn get visitId => text().references(Visits, #id)();
+  TextColumn get productId => text().references(Products, #id)();
+  IntColumn get quantity => integer()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 class Procedures extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
