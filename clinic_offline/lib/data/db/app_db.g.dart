@@ -28,6 +28,15 @@ class $PatientsTable extends Patients with TableInfo<$PatientsTable, Patient> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _genderMeta = const VerificationMeta('gender');
+  @override
+  late final GeneratedColumn<String> gender = GeneratedColumn<String>(
+    'gender',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _dateOfBirthMeta = const VerificationMeta(
     'dateOfBirth',
   );
@@ -72,6 +81,7 @@ class $PatientsTable extends Patients with TableInfo<$PatientsTable, Patient> {
   List<GeneratedColumn> get $columns => [
     id,
     fullName,
+    gender,
     dateOfBirth,
     phone,
     notes,
@@ -101,6 +111,12 @@ class $PatientsTable extends Patients with TableInfo<$PatientsTable, Patient> {
       );
     } else if (isInserting) {
       context.missing(_fullNameMeta);
+    }
+    if (data.containsKey('gender')) {
+      context.handle(
+        _genderMeta,
+        gender.isAcceptableOrUnknown(data['gender']!, _genderMeta),
+      );
     }
     if (data.containsKey('date_of_birth')) {
       context.handle(
@@ -148,6 +164,10 @@ class $PatientsTable extends Patients with TableInfo<$PatientsTable, Patient> {
         DriftSqlType.string,
         data['${effectivePrefix}full_name'],
       )!,
+      gender: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gender'],
+      ),
       dateOfBirth: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}date_of_birth'],
@@ -176,6 +196,7 @@ class $PatientsTable extends Patients with TableInfo<$PatientsTable, Patient> {
 class Patient extends DataClass implements Insertable<Patient> {
   final String id;
   final String fullName;
+  final String? gender;
   final DateTime? dateOfBirth;
   final String? phone;
   final String? notes;
@@ -183,6 +204,7 @@ class Patient extends DataClass implements Insertable<Patient> {
   const Patient({
     required this.id,
     required this.fullName,
+    this.gender,
     this.dateOfBirth,
     this.phone,
     this.notes,
@@ -193,6 +215,9 @@ class Patient extends DataClass implements Insertable<Patient> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['full_name'] = Variable<String>(fullName);
+    if (!nullToAbsent || gender != null) {
+      map['gender'] = Variable<String>(gender);
+    }
     if (!nullToAbsent || dateOfBirth != null) {
       map['date_of_birth'] = Variable<DateTime>(dateOfBirth);
     }
@@ -210,6 +235,9 @@ class Patient extends DataClass implements Insertable<Patient> {
     return PatientsCompanion(
       id: Value(id),
       fullName: Value(fullName),
+      gender: gender == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gender),
       dateOfBirth: dateOfBirth == null && nullToAbsent
           ? const Value.absent()
           : Value(dateOfBirth),
@@ -231,6 +259,7 @@ class Patient extends DataClass implements Insertable<Patient> {
     return Patient(
       id: serializer.fromJson<String>(json['id']),
       fullName: serializer.fromJson<String>(json['fullName']),
+      gender: serializer.fromJson<String?>(json['gender']),
       dateOfBirth: serializer.fromJson<DateTime?>(json['dateOfBirth']),
       phone: serializer.fromJson<String?>(json['phone']),
       notes: serializer.fromJson<String?>(json['notes']),
@@ -243,6 +272,7 @@ class Patient extends DataClass implements Insertable<Patient> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'fullName': serializer.toJson<String>(fullName),
+      'gender': serializer.toJson<String?>(gender),
       'dateOfBirth': serializer.toJson<DateTime?>(dateOfBirth),
       'phone': serializer.toJson<String?>(phone),
       'notes': serializer.toJson<String?>(notes),
@@ -253,6 +283,7 @@ class Patient extends DataClass implements Insertable<Patient> {
   Patient copyWith({
     String? id,
     String? fullName,
+    Value<String?> gender = const Value.absent(),
     Value<DateTime?> dateOfBirth = const Value.absent(),
     Value<String?> phone = const Value.absent(),
     Value<String?> notes = const Value.absent(),
@@ -260,6 +291,7 @@ class Patient extends DataClass implements Insertable<Patient> {
   }) => Patient(
     id: id ?? this.id,
     fullName: fullName ?? this.fullName,
+    gender: gender.present ? gender.value : this.gender,
     dateOfBirth: dateOfBirth.present ? dateOfBirth.value : this.dateOfBirth,
     phone: phone.present ? phone.value : this.phone,
     notes: notes.present ? notes.value : this.notes,
@@ -269,6 +301,7 @@ class Patient extends DataClass implements Insertable<Patient> {
     return Patient(
       id: data.id.present ? data.id.value : this.id,
       fullName: data.fullName.present ? data.fullName.value : this.fullName,
+      gender: data.gender.present ? data.gender.value : this.gender,
       dateOfBirth: data.dateOfBirth.present
           ? data.dateOfBirth.value
           : this.dateOfBirth,
@@ -283,6 +316,7 @@ class Patient extends DataClass implements Insertable<Patient> {
     return (StringBuffer('Patient(')
           ..write('id: $id, ')
           ..write('fullName: $fullName, ')
+          ..write('gender: $gender, ')
           ..write('dateOfBirth: $dateOfBirth, ')
           ..write('phone: $phone, ')
           ..write('notes: $notes, ')
@@ -293,13 +327,14 @@ class Patient extends DataClass implements Insertable<Patient> {
 
   @override
   int get hashCode =>
-      Object.hash(id, fullName, dateOfBirth, phone, notes, createdAt);
+      Object.hash(id, fullName, gender, dateOfBirth, phone, notes, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Patient &&
           other.id == this.id &&
           other.fullName == this.fullName &&
+          other.gender == this.gender &&
           other.dateOfBirth == this.dateOfBirth &&
           other.phone == this.phone &&
           other.notes == this.notes &&
@@ -309,6 +344,7 @@ class Patient extends DataClass implements Insertable<Patient> {
 class PatientsCompanion extends UpdateCompanion<Patient> {
   final Value<String> id;
   final Value<String> fullName;
+  final Value<String?> gender;
   final Value<DateTime?> dateOfBirth;
   final Value<String?> phone;
   final Value<String?> notes;
@@ -317,6 +353,7 @@ class PatientsCompanion extends UpdateCompanion<Patient> {
   const PatientsCompanion({
     this.id = const Value.absent(),
     this.fullName = const Value.absent(),
+    this.gender = const Value.absent(),
     this.dateOfBirth = const Value.absent(),
     this.phone = const Value.absent(),
     this.notes = const Value.absent(),
@@ -326,6 +363,7 @@ class PatientsCompanion extends UpdateCompanion<Patient> {
   PatientsCompanion.insert({
     required String id,
     required String fullName,
+    this.gender = const Value.absent(),
     this.dateOfBirth = const Value.absent(),
     this.phone = const Value.absent(),
     this.notes = const Value.absent(),
@@ -337,6 +375,7 @@ class PatientsCompanion extends UpdateCompanion<Patient> {
   static Insertable<Patient> custom({
     Expression<String>? id,
     Expression<String>? fullName,
+    Expression<String>? gender,
     Expression<DateTime>? dateOfBirth,
     Expression<String>? phone,
     Expression<String>? notes,
@@ -346,6 +385,7 @@ class PatientsCompanion extends UpdateCompanion<Patient> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (fullName != null) 'full_name': fullName,
+      if (gender != null) 'gender': gender,
       if (dateOfBirth != null) 'date_of_birth': dateOfBirth,
       if (phone != null) 'phone': phone,
       if (notes != null) 'notes': notes,
@@ -357,6 +397,7 @@ class PatientsCompanion extends UpdateCompanion<Patient> {
   PatientsCompanion copyWith({
     Value<String>? id,
     Value<String>? fullName,
+    Value<String?>? gender,
     Value<DateTime?>? dateOfBirth,
     Value<String?>? phone,
     Value<String?>? notes,
@@ -366,6 +407,7 @@ class PatientsCompanion extends UpdateCompanion<Patient> {
     return PatientsCompanion(
       id: id ?? this.id,
       fullName: fullName ?? this.fullName,
+      gender: gender ?? this.gender,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       phone: phone ?? this.phone,
       notes: notes ?? this.notes,
@@ -382,6 +424,9 @@ class PatientsCompanion extends UpdateCompanion<Patient> {
     }
     if (fullName.present) {
       map['full_name'] = Variable<String>(fullName.value);
+    }
+    if (gender.present) {
+      map['gender'] = Variable<String>(gender.value);
     }
     if (dateOfBirth.present) {
       map['date_of_birth'] = Variable<DateTime>(dateOfBirth.value);
@@ -406,6 +451,7 @@ class PatientsCompanion extends UpdateCompanion<Patient> {
     return (StringBuffer('PatientsCompanion(')
           ..write('id: $id, ')
           ..write('fullName: $fullName, ')
+          ..write('gender: $gender, ')
           ..write('dateOfBirth: $dateOfBirth, ')
           ..write('phone: $phone, ')
           ..write('notes: $notes, ')
@@ -2495,6 +2541,411 @@ class ProductUsagesCompanion extends UpdateCompanion<ProductUsage> {
   }
 }
 
+class $ManualIncomesTable extends ManualIncomes
+    with TableInfo<$ManualIncomesTable, ManualIncome> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ManualIncomesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _incomeAtMeta = const VerificationMeta(
+    'incomeAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> incomeAt = GeneratedColumn<DateTime>(
+    'income_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    amount,
+    incomeAt,
+    notes,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'manual_incomes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ManualIncome> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('income_at')) {
+      context.handle(
+        _incomeAtMeta,
+        incomeAt.isAcceptableOrUnknown(data['income_at']!, _incomeAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_incomeAtMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ManualIncome map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ManualIncome(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      )!,
+      incomeAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}income_at'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ManualIncomesTable createAlias(String alias) {
+    return $ManualIncomesTable(attachedDatabase, alias);
+  }
+}
+
+class ManualIncome extends DataClass implements Insertable<ManualIncome> {
+  final String id;
+  final String title;
+  final int amount;
+  final DateTime incomeAt;
+  final String? notes;
+  final DateTime createdAt;
+  const ManualIncome({
+    required this.id,
+    required this.title,
+    required this.amount,
+    required this.incomeAt,
+    this.notes,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    map['amount'] = Variable<int>(amount);
+    map['income_at'] = Variable<DateTime>(incomeAt);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ManualIncomesCompanion toCompanion(bool nullToAbsent) {
+    return ManualIncomesCompanion(
+      id: Value(id),
+      title: Value(title),
+      amount: Value(amount),
+      incomeAt: Value(incomeAt),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ManualIncome.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ManualIncome(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      amount: serializer.fromJson<int>(json['amount']),
+      incomeAt: serializer.fromJson<DateTime>(json['incomeAt']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'amount': serializer.toJson<int>(amount),
+      'incomeAt': serializer.toJson<DateTime>(incomeAt),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ManualIncome copyWith({
+    String? id,
+    String? title,
+    int? amount,
+    DateTime? incomeAt,
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+  }) => ManualIncome(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    amount: amount ?? this.amount,
+    incomeAt: incomeAt ?? this.incomeAt,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ManualIncome copyWithCompanion(ManualIncomesCompanion data) {
+    return ManualIncome(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      incomeAt: data.incomeAt.present ? data.incomeAt.value : this.incomeAt,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ManualIncome(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('amount: $amount, ')
+          ..write('incomeAt: $incomeAt, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, title, amount, incomeAt, notes, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ManualIncome &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.amount == this.amount &&
+          other.incomeAt == this.incomeAt &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt);
+}
+
+class ManualIncomesCompanion extends UpdateCompanion<ManualIncome> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<int> amount;
+  final Value<DateTime> incomeAt;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const ManualIncomesCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.incomeAt = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ManualIncomesCompanion.insert({
+    required String id,
+    required String title,
+    required int amount,
+    required DateTime incomeAt,
+    this.notes = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       amount = Value(amount),
+       incomeAt = Value(incomeAt),
+       createdAt = Value(createdAt);
+  static Insertable<ManualIncome> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<int>? amount,
+    Expression<DateTime>? incomeAt,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (amount != null) 'amount': amount,
+      if (incomeAt != null) 'income_at': incomeAt,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ManualIncomesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<int>? amount,
+    Value<DateTime>? incomeAt,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ManualIncomesCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      incomeAt: incomeAt ?? this.incomeAt,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    if (incomeAt.present) {
+      map['income_at'] = Variable<DateTime>(incomeAt.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ManualIncomesCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('amount: $amount, ')
+          ..write('incomeAt: $incomeAt, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ProceduresTable extends Procedures
     with TableInfo<$ProceduresTable, Procedure> {
   @override
@@ -3339,6 +3790,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PhotosTable photos = $PhotosTable(this);
   late final $ProductsTable products = $ProductsTable(this);
   late final $ProductUsagesTable productUsages = $ProductUsagesTable(this);
+  late final $ManualIncomesTable manualIncomes = $ManualIncomesTable(this);
   late final $ProceduresTable procedures = $ProceduresTable(this);
   late final $VisitProceduresTable visitProcedures = $VisitProceduresTable(
     this,
@@ -3354,6 +3806,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     photos,
     products,
     productUsages,
+    manualIncomes,
     procedures,
     visitProcedures,
   ];
@@ -3363,6 +3816,7 @@ typedef $$PatientsTableCreateCompanionBuilder =
     PatientsCompanion Function({
       required String id,
       required String fullName,
+      Value<String?> gender,
       Value<DateTime?> dateOfBirth,
       Value<String?> phone,
       Value<String?> notes,
@@ -3373,6 +3827,7 @@ typedef $$PatientsTableUpdateCompanionBuilder =
     PatientsCompanion Function({
       Value<String> id,
       Value<String> fullName,
+      Value<String?> gender,
       Value<DateTime?> dateOfBirth,
       Value<String?> phone,
       Value<String?> notes,
@@ -3457,6 +3912,11 @@ class $$PatientsTableFilterComposer
 
   ColumnFilters<String> get fullName => $composableBuilder(
     column: $table.fullName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gender => $composableBuilder(
+    column: $table.gender,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3575,6 +4035,11 @@ class $$PatientsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get gender => $composableBuilder(
+    column: $table.gender,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get dateOfBirth => $composableBuilder(
     column: $table.dateOfBirth,
     builder: (column) => ColumnOrderings(column),
@@ -3610,6 +4075,9 @@ class $$PatientsTableAnnotationComposer
 
   GeneratedColumn<String> get fullName =>
       $composableBuilder(column: $table.fullName, builder: (column) => column);
+
+  GeneratedColumn<String> get gender =>
+      $composableBuilder(column: $table.gender, builder: (column) => column);
 
   GeneratedColumn<DateTime> get dateOfBirth => $composableBuilder(
     column: $table.dateOfBirth,
@@ -3735,6 +4203,7 @@ class $$PatientsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> fullName = const Value.absent(),
+                Value<String?> gender = const Value.absent(),
                 Value<DateTime?> dateOfBirth = const Value.absent(),
                 Value<String?> phone = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -3743,6 +4212,7 @@ class $$PatientsTableTableManager
               }) => PatientsCompanion(
                 id: id,
                 fullName: fullName,
+                gender: gender,
                 dateOfBirth: dateOfBirth,
                 phone: phone,
                 notes: notes,
@@ -3753,6 +4223,7 @@ class $$PatientsTableTableManager
               ({
                 required String id,
                 required String fullName,
+                Value<String?> gender = const Value.absent(),
                 Value<DateTime?> dateOfBirth = const Value.absent(),
                 Value<String?> phone = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
@@ -3761,6 +4232,7 @@ class $$PatientsTableTableManager
               }) => PatientsCompanion.insert(
                 id: id,
                 fullName: fullName,
+                gender: gender,
                 dateOfBirth: dateOfBirth,
                 phone: phone,
                 notes: notes,
@@ -6012,6 +6484,225 @@ typedef $$ProductUsagesTableProcessedTableManager =
       ProductUsage,
       PrefetchHooks Function({bool visitId, bool productId})
     >;
+typedef $$ManualIncomesTableCreateCompanionBuilder =
+    ManualIncomesCompanion Function({
+      required String id,
+      required String title,
+      required int amount,
+      required DateTime incomeAt,
+      Value<String?> notes,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$ManualIncomesTableUpdateCompanionBuilder =
+    ManualIncomesCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<int> amount,
+      Value<DateTime> incomeAt,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$ManualIncomesTableFilterComposer
+    extends Composer<_$AppDatabase, $ManualIncomesTable> {
+  $$ManualIncomesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get incomeAt => $composableBuilder(
+    column: $table.incomeAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ManualIncomesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ManualIncomesTable> {
+  $$ManualIncomesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get incomeAt => $composableBuilder(
+    column: $table.incomeAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ManualIncomesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ManualIncomesTable> {
+  $$ManualIncomesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get incomeAt =>
+      $composableBuilder(column: $table.incomeAt, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ManualIncomesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ManualIncomesTable,
+          ManualIncome,
+          $$ManualIncomesTableFilterComposer,
+          $$ManualIncomesTableOrderingComposer,
+          $$ManualIncomesTableAnnotationComposer,
+          $$ManualIncomesTableCreateCompanionBuilder,
+          $$ManualIncomesTableUpdateCompanionBuilder,
+          (
+            ManualIncome,
+            BaseReferences<_$AppDatabase, $ManualIncomesTable, ManualIncome>,
+          ),
+          ManualIncome,
+          PrefetchHooks Function()
+        > {
+  $$ManualIncomesTableTableManager(_$AppDatabase db, $ManualIncomesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ManualIncomesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ManualIncomesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ManualIncomesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<int> amount = const Value.absent(),
+                Value<DateTime> incomeAt = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ManualIncomesCompanion(
+                id: id,
+                title: title,
+                amount: amount,
+                incomeAt: incomeAt,
+                notes: notes,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                required int amount,
+                required DateTime incomeAt,
+                Value<String?> notes = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ManualIncomesCompanion.insert(
+                id: id,
+                title: title,
+                amount: amount,
+                incomeAt: incomeAt,
+                notes: notes,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ManualIncomesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ManualIncomesTable,
+      ManualIncome,
+      $$ManualIncomesTableFilterComposer,
+      $$ManualIncomesTableOrderingComposer,
+      $$ManualIncomesTableAnnotationComposer,
+      $$ManualIncomesTableCreateCompanionBuilder,
+      $$ManualIncomesTableUpdateCompanionBuilder,
+      (
+        ManualIncome,
+        BaseReferences<_$AppDatabase, $ManualIncomesTable, ManualIncome>,
+      ),
+      ManualIncome,
+      PrefetchHooks Function()
+    >;
 typedef $$ProceduresTableCreateCompanionBuilder =
     ProceduresCompanion Function({
       required String id,
@@ -6795,6 +7486,8 @@ class $AppDatabaseManager {
       $$ProductsTableTableManager(_db, _db.products);
   $$ProductUsagesTableTableManager get productUsages =>
       $$ProductUsagesTableTableManager(_db, _db.productUsages);
+  $$ManualIncomesTableTableManager get manualIncomes =>
+      $$ManualIncomesTableTableManager(_db, _db.manualIncomes);
   $$ProceduresTableTableManager get procedures =>
       $$ProceduresTableTableManager(_db, _db.procedures);
   $$VisitProceduresTableTableManager get visitProcedures =>

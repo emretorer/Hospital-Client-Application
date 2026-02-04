@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../providers.dart';
+import 'edit_patient_screen.dart';
 
 class PatientDetailScreen extends ConsumerStatefulWidget {
   const PatientDetailScreen({super.key, required this.patientId});
@@ -20,11 +21,18 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final patientAsync = ref.watch(_patientProvider(widget.patientId));
-    final appointmentsAsync = ref.watch(_appointmentsProvider(widget.patientId));
+    final appointmentsAsync = ref.watch(
+      _appointmentsProvider(widget.patientId),
+    );
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Patient'),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _openEditPatient,
+          child: const Text('Edit'),
+        ),
       ),
       child: SafeArea(
         child: patientAsync.when(
@@ -34,9 +42,7 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
                 SliverToBoxAdapter(
                   child: CupertinoListSection.insetGrouped(
                     children: [
-                      CupertinoListTile(
-                        title: Text(patient.fullName),
-                      ),
+                      CupertinoListTile(title: Text(patient.fullName)),
                     ],
                   ),
                 ),
@@ -48,12 +54,18 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
                         title: const Text('Phone'),
                         trailing: Text(patient.phone ?? '-'),
                       ),
+                      CupertinoListTile(
+                        title: const Text('Gender'),
+                        trailing: Text(_genderLabel(patient.gender)),
+                      ),
                       if (patient.dateOfBirth != null)
                         CupertinoListTile(
                           title: const Text('Date of Birth'),
                           trailing: Text(
-                            DateFormat('dd.MM.yyyy', 'tr_TR')
-                                .format(patient.dateOfBirth!),
+                            DateFormat(
+                              'dd.MM.yyyy',
+                              'tr_TR',
+                            ).format(patient.dateOfBirth!),
                           ),
                         ),
                       if (patient.notes != null)
@@ -61,9 +73,9 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
                           title: const Text('Notes'),
                           trailing: Text(
                             patient.notes!,
-                            style: CupertinoTheme.of(context)
-                                .textTheme
-                                .textStyle,
+                            style: CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle,
                           ),
                         ),
                     ],
@@ -130,6 +142,30 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
       default:
         return CupertinoIcons.clock;
     }
+  }
+
+  String _genderLabel(String? value) {
+    switch ((value ?? '').trim().toLowerCase()) {
+      case 'female':
+        return 'Female';
+      case 'male':
+        return 'Male';
+      case 'other':
+        return 'Other';
+      default:
+        return '-';
+    }
+  }
+
+  Future<void> _openEditPatient() async {
+    final patient = await ref
+        .read(patientsRepositoryProvider)
+        .getById(widget.patientId);
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      CupertinoPageRoute(builder: (_) => EditPatientScreen(patient: patient)),
+    );
+    ref.invalidate(_patientProvider(widget.patientId));
   }
 }
 

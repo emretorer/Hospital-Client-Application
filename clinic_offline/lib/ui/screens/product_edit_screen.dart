@@ -132,8 +132,11 @@ class _ProductEditScreenState extends ConsumerState<ProductEditScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: CupertinoButton(
                   onPressed: _delete,
-                  color: CupertinoColors.systemRed,
-                  child: const Text('Delete Product'),
+                  color: const Color(0xFFFF4D4D),
+                  child: const Text(
+                    'Delete Product',
+                    style: TextStyle(color: CupertinoColors.white),
+                  ),
                 ),
               ),
           ],

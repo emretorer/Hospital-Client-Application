@@ -1,51 +1,130 @@
+import 'dart:math' as math;
+
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
-import '../../providers.dart';
+import '../../data/db/app_db.dart';
 import '../../data/repositories/analytics_repository.dart';
+import '../../providers.dart';
 import '../widgets/money_format.dart';
 
-final _selectedMonthProvider = StateProvider<DateTime>((ref) {
-  final now = DateTime.now();
-  return DateTime(now.year, now.month, 1);
-});
+final _monthlyEntriesProvider =
+    FutureProvider.family<List<RevenueEntry>, DateTime>((
+      ref,
+      monthStart,
+    ) async {
+      final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1);
+      final repo = ref.watch(analyticsRepositoryProvider);
+      return repo.getMonthlyRevenueEntries(monthStart, monthEnd);
+    });
 
-final _monthlyRevenueProvider = FutureProvider<int>((ref) async {
-  final monthStart = ref.watch(_selectedMonthProvider);
-  final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1);
-  final repo = ref.watch(analyticsRepositoryProvider);
-  return repo.getMonthlyRevenue(monthStart, monthEnd);
-});
+enum RevenueDateSort { newestFirst, oldestFirst }
 
-final _breakdownProvider = FutureProvider<List<ProcedureBreakdown>>((ref) async {
-  final monthStart = ref.watch(_selectedMonthProvider);
-  final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1);
-  final repo = ref.watch(analyticsRepositoryProvider);
-  return repo.getMonthlyBreakdownByProcedure(monthStart, monthEnd);
-});
+enum RevenueCostSort { lowToHigh, highToLow }
 
-final _dailyTotalsProvider = FutureProvider<List<DailyTotal>>((ref) async {
-  final monthStart = ref.watch(_selectedMonthProvider);
-  final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1);
-  final repo = ref.watch(analyticsRepositoryProvider);
-  return repo.getDailyTotals(monthStart, monthEnd);
-});
+enum RevenueProcedureSort { aToZ, zToA }
 
-class RevenueScreen extends ConsumerWidget {
+enum RevenueGenderFilter { all, female, male }
+
+class RevenueFilters {
+  const RevenueFilters({
+    this.startDate,
+    this.endDate,
+    this.patientName = '',
+    this.gender = RevenueGenderFilter.all,
+    this.minAge,
+    this.maxAge,
+    this.dateSort = RevenueDateSort.newestFirst,
+    this.costSort = RevenueCostSort.highToLow,
+    this.procedureSort = RevenueProcedureSort.aToZ,
+    this.selectedProcedures = const <String>{},
+  });
+
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String patientName;
+  final RevenueGenderFilter gender;
+  final int? minAge;
+  final int? maxAge;
+  final RevenueDateSort dateSort;
+  final RevenueCostSort costSort;
+  final RevenueProcedureSort? procedureSort;
+  final Set<String>? selectedProcedures;
+
+  RevenueProcedureSort get procedureSortSafe =>
+      procedureSort ?? RevenueProcedureSort.aToZ;
+  Set<String> get selectedProceduresSafe =>
+      selectedProcedures ?? const <String>{};
+
+  RevenueFilters copyWith({
+    DateTime? startDate,
+    DateTime? endDate,
+    String? patientName,
+    RevenueGenderFilter? gender,
+    int? minAge,
+    int? maxAge,
+    RevenueDateSort? dateSort,
+    RevenueCostSort? costSort,
+    RevenueProcedureSort? procedureSort,
+    Set<String>? selectedProcedures,
+    bool clearStartDate = false,
+    bool clearEndDate = false,
+    bool clearMinAge = false,
+    bool clearMaxAge = false,
+    bool clearSelectedProcedures = false,
+  }) {
+    return RevenueFilters(
+      startDate: clearStartDate ? null : (startDate ?? this.startDate),
+      endDate: clearEndDate ? null : (endDate ?? this.endDate),
+      patientName: patientName ?? this.patientName,
+      gender: gender ?? this.gender,
+      minAge: clearMinAge ? null : (minAge ?? this.minAge),
+      maxAge: clearMaxAge ? null : (maxAge ?? this.maxAge),
+      dateSort: dateSort ?? this.dateSort,
+      costSort: costSort ?? this.costSort,
+      procedureSort: procedureSort ?? procedureSortSafe,
+      selectedProcedures: clearSelectedProcedures
+          ? <String>{}
+          : (selectedProcedures ?? selectedProceduresSafe),
+    );
+  }
+}
+
+class RevenueScreen extends ConsumerStatefulWidget {
   const RevenueScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final month = ref.watch(_selectedMonthProvider);
-    final monthLabel = DateFormat('MMMM yyyy', 'tr_TR').format(month);
-    final totalAsync = ref.watch(_monthlyRevenueProvider);
-    final breakdownAsync = ref.watch(_breakdownProvider);
-    final dailyAsync = ref.watch(_dailyTotalsProvider);
+  ConsumerState<RevenueScreen> createState() => _RevenueScreenState();
+}
+
+class _RevenueScreenState extends ConsumerState<RevenueScreen> {
+  static const int _collapsedItemCount = 8;
+
+  DateTime _selectedMonth = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    1,
+  );
+  RevenueFilters _filters = const RevenueFilters();
+  final Set<String> _expandedIds = <String>{};
+  bool _showAll = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final monthLabel = DateFormat('MMMM yyyy', 'tr_TR').format(_selectedMonth);
+    final entriesAsync = ref.watch(_monthlyEntriesProvider(_selectedMonth));
 
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Revenue'),
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('Revenues'),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _showFilterSheet,
+          child: const Icon(CupertinoIcons.line_horizontal_3_decrease_circle),
+        ),
       ),
       child: SafeArea(
         child: ListView(
@@ -58,83 +137,74 @@ class RevenueScreen extends ConsumerWidget {
                   CupertinoButton(
                     padding: EdgeInsets.zero,
                     onPressed: () {
-                      final prev = DateTime(month.year, month.month - 1, 1);
-                      ref.read(_selectedMonthProvider.notifier).state = prev;
+                      setState(() {
+                        _selectedMonth = DateTime(
+                          _selectedMonth.year,
+                          _selectedMonth.month - 1,
+                          1,
+                        );
+                        _expandedIds.clear();
+                        _showAll = false;
+                      });
                     },
                     child: const Icon(CupertinoIcons.chevron_left),
                   ),
-                  Text(
-                    monthLabel,
-                    style: CupertinoTheme.of(context)
-                        .textTheme
-                        .navTitleTextStyle,
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: _pickMonth,
+                    child: Text(
+                      monthLabel,
+                      style: CupertinoTheme.of(
+                        context,
+                      ).textTheme.navTitleTextStyle,
+                    ),
                   ),
                   CupertinoButton(
                     padding: EdgeInsets.zero,
                     onPressed: () {
-                      final next = DateTime(month.year, month.month + 1, 1);
-                      ref.read(_selectedMonthProvider.notifier).state = next;
+                      setState(() {
+                        _selectedMonth = DateTime(
+                          _selectedMonth.year,
+                          _selectedMonth.month + 1,
+                          1,
+                        );
+                        _expandedIds.clear();
+                        _showAll = false;
+                      });
                     },
                     child: const Icon(CupertinoIcons.chevron_right),
                   ),
                 ],
               ),
             ),
-            totalAsync.when(
-              data: (total) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  centsToTry(total),
-                  style: CupertinoTheme.of(context)
-                      .textTheme
-                      .navLargeTitleTextStyle,
+            if (_hasActiveFilters(_filters))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Filters active',
+                        style: CupertinoTheme.of(context).textTheme.textStyle
+                            .copyWith(color: CupertinoColors.systemBlue),
+                      ),
+                    ),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        setState(() {
+                          _filters = const RevenueFilters();
+                          _expandedIds.clear();
+                          _showAll = false;
+                        });
+                      },
+                      child: const Text('Clear'),
+                    ),
+                  ],
                 ),
               ),
-              error: (err, _) => Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Error: $err'),
-              ),
-              loading: () => const Padding(
-                padding: EdgeInsets.all(16),
-                child: CupertinoActivityIndicator(),
-              ),
-            ),
-            breakdownAsync.when(
-              data: (items) => CupertinoListSection.insetGrouped(
-                header: const Text('By Procedure'),
-                children: [
-                  if (items.isEmpty)
-                    const CupertinoListTile(title: Text('No data.')),
-                  for (final item in items)
-                    CupertinoListTile(
-                      title: Text(item.procedureName),
-                      subtitle: Text('Count: ${item.count}'),
-                      trailing: Text(centsToTry(item.totalCents)),
-                    ),
-                ],
-              ),
-              error: (err, _) => Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Error: $err'),
-              ),
-              loading: () => const Padding(
-                padding: EdgeInsets.all(16),
-                child: CupertinoActivityIndicator(),
-              ),
-            ),
-            dailyAsync.when(
-              data: (items) => CupertinoListSection.insetGrouped(
-                header: const Text('Daily Totals'),
-                children: [
-                  if (items.isEmpty)
-                    const CupertinoListTile(title: Text('No data.')),
-                  for (final item in items)
-                    CupertinoListTile(
-                      title: Text(DateFormat('dd.MM.yyyy').format(item.day)),
-                      trailing: Text(centsToTry(item.totalCents)),
-                    ),
-                ],
-              ),
+            entriesAsync.when(
+              data: (entries) => _buildContent(context, entries),
               error: (err, _) => Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text('Error: $err'),
@@ -146,6 +216,929 @@ class RevenueScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, List<RevenueEntry> entries) {
+    final filtered = _applyFilters(entries, _selectedMonth, _filters);
+    final sorted = [...filtered]
+      ..sort((a, b) => _compareEntries(a, b, _filters));
+
+    final total = sorted.fold<int>(0, (sum, item) => sum + item.totalCents);
+
+    final visibleCount = _showAll
+        ? sorted.length
+        : math.min(_collapsedItemCount, sorted.length);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            centsToTry(total),
+            style: CupertinoTheme.of(context).textTheme.navLargeTitleTextStyle,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: CupertinoButton.filled(
+            onPressed: _showAddIncomeSheet,
+            child: const Text('Add Income'),
+          ),
+        ),
+        CupertinoListSection.insetGrouped(
+          header: const Text('Revenues'),
+          children: [
+            if (sorted.isEmpty)
+              const CupertinoListTile(
+                title: Text('No procedures for this month.'),
+              ),
+            for (final entry in sorted.take(visibleCount))
+              _buildEntryTile(context, entry),
+          ],
+        ),
+        if (sorted.length > _collapsedItemCount)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: CupertinoButton(
+              onPressed: () => setState(() => _showAll = !_showAll),
+              child: Text(_showAll ? 'Load less' : 'Load more'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildEntryTile(BuildContext context, RevenueEntry entry) {
+    final isExpanded = _expandedIds.contains(entry.id);
+
+    return Column(
+      children: [
+        CupertinoListTile(
+          title: Text(entry.procedureName),
+          subtitle: Text(
+            '${DateFormat('dd.MM.yyyy HH:mm', 'tr_TR').format(entry.visitAt)} - ${entry.patientName}',
+          ),
+          trailing: Text(centsToTry(entry.totalCents)),
+          onTap: () {
+            setState(() {
+              if (isExpanded) {
+                _expandedIds.remove(entry.id);
+              } else {
+                _expandedIds.add(entry.id);
+              }
+            });
+          },
+        ),
+        if (isExpanded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _detailRow(
+                  'Type',
+                  entry.isManualIncomeSafe ? 'Manual income' : 'Procedure',
+                ),
+                _detailRow('Patient', entry.patientName),
+                if (!entry.isManualIncomeSafe)
+                  _detailRow(
+                    'Gender',
+                    _genderLabelFromValue(entry.patientGender),
+                  ),
+                if (!entry.isManualIncomeSafe)
+                  _detailRow('Age', _ageLabel(entry)),
+                _detailRow('Quantity', '${entry.quantity}'),
+                _detailRow('Unit price', centsToTry(entry.unitPrice)),
+                _detailRow('Discount', centsToTry(entry.discount)),
+                _detailRow('Total', centsToTry(entry.totalCents)),
+                if ((entry.notes ?? '').trim().isNotEmpty)
+                  _detailRow('Notes', entry.notes!.trim(), hasDivider: false),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _detailRow(String label, String value, {bool hasDivider = true}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                color: CupertinoColors.label,
+                fontSize: 16,
+              ),
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                TextSpan(text: value),
+              ],
+            ),
+          ),
+        ),
+        if (hasDivider) Container(height: 1, color: CupertinoColors.separator),
+      ],
+    );
+  }
+
+  Future<void> _pickMonth() async {
+    final selected = await showCupertinoModalPopup<DateTime>(
+      context: context,
+      builder: (context) => _MonthPickerSheet(initial: _selectedMonth),
+    );
+
+    if (selected == null) return;
+
+    setState(() {
+      _selectedMonth = DateTime(selected.year, selected.month, 1);
+      _expandedIds.clear();
+      _showAll = false;
+    });
+  }
+
+  Future<void> _showFilterSheet() async {
+    final entries = await ref.read(
+      _monthlyEntriesProvider(_selectedMonth).future,
+    );
+    if (!mounted) return;
+    final procedureOptions =
+        entries.map((e) => e.procedureName).toSet().toList()..sort();
+
+    final result = await showCupertinoModalPopup<RevenueFilters>(
+      context: context,
+      builder: (context) => _RevenueFilterSheet(
+        initial: _filters,
+        procedureOptions: procedureOptions,
+      ),
+    );
+
+    if (result == null) return;
+
+    setState(() {
+      _filters = result;
+      _expandedIds.clear();
+      _showAll = false;
+    });
+  }
+
+  Future<void> _showAddIncomeSheet() async {
+    final result = await showCupertinoModalPopup<_ManualIncomeDraft>(
+      context: context,
+      builder: (context) => const _AddIncomeSheet(),
+    );
+    if (result == null) return;
+
+    await ref
+        .read(analyticsRepositoryProvider)
+        .addManualIncome(
+          ManualIncomesCompanion(
+            id: Value(const Uuid().v4()),
+            title: Value(result.title),
+            amount: Value(result.amount),
+            incomeAt: Value(result.incomeAt),
+            notes: Value(result.notes),
+            createdAt: Value(DateTime.now()),
+          ),
+        );
+
+    ref.invalidate(_monthlyEntriesProvider(_selectedMonth));
+  }
+
+  List<RevenueEntry> _applyFilters(
+    List<RevenueEntry> entries,
+    DateTime monthStart,
+    RevenueFilters filters,
+  ) {
+    final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1);
+    final start = filters.startDate == null
+        ? monthStart
+        : DateTime(
+            filters.startDate!.year,
+            filters.startDate!.month,
+            filters.startDate!.day,
+          );
+    final endExclusive = filters.endDate == null
+        ? monthEnd
+        : DateTime(
+            filters.endDate!.year,
+            filters.endDate!.month,
+            filters.endDate!.day + 1,
+          );
+    final query = filters.patientName.trim().toLowerCase();
+
+    return entries.where((entry) {
+      if (entry.visitAt.isBefore(start) ||
+          !entry.visitAt.isBefore(endExclusive)) {
+        return false;
+      }
+
+      if (query.isNotEmpty &&
+          !entry.patientName.toLowerCase().contains(query)) {
+        return false;
+      }
+
+      if (!_matchesGender(entry.patientGender, filters.gender)) {
+        return false;
+      }
+
+      final age = _computeAge(entry.patientDateOfBirth, entry.visitAt);
+      if (filters.minAge != null && (age == null || age < filters.minAge!)) {
+        return false;
+      }
+      if (filters.maxAge != null && (age == null || age > filters.maxAge!)) {
+        return false;
+      }
+      if (filters.selectedProceduresSafe.isNotEmpty &&
+          !filters.selectedProceduresSafe.contains(entry.procedureName)) {
+        return false;
+      }
+
+      return true;
+    }).toList();
+  }
+
+  int _compareEntries(RevenueEntry a, RevenueEntry b, RevenueFilters filters) {
+    final procedureSort = filters.procedureSortSafe;
+    final procedureCmp = a.procedureName.toLowerCase().compareTo(
+      b.procedureName.toLowerCase(),
+    );
+    if (procedureCmp != 0) {
+      return procedureSort == RevenueProcedureSort.aToZ
+          ? procedureCmp
+          : -procedureCmp;
+    }
+
+    final dateSort = filters.dateSort;
+    final costSort = filters.costSort;
+
+    final dateCmp = a.visitAt.compareTo(b.visitAt);
+    if (dateCmp != 0) {
+      return dateSort == RevenueDateSort.newestFirst ? -dateCmp : dateCmp;
+    }
+
+    final costCmp = a.totalCents.compareTo(b.totalCents);
+    if (costCmp != 0) {
+      return costSort == RevenueCostSort.lowToHigh ? costCmp : -costCmp;
+    }
+
+    return a.procedureName.compareTo(b.procedureName);
+  }
+
+  bool _matchesGender(String? value, RevenueGenderFilter filter) {
+    if (filter == RevenueGenderFilter.all) return true;
+
+    final normalized = (value ?? '').trim().toLowerCase();
+    switch (filter) {
+      case RevenueGenderFilter.female:
+        return normalized == 'female';
+      case RevenueGenderFilter.male:
+        return normalized == 'male';
+      case RevenueGenderFilter.all:
+        return true;
+    }
+  }
+
+  bool _hasActiveFilters(RevenueFilters filters) {
+    return filters.startDate != null ||
+        filters.endDate != null ||
+        filters.patientName.trim().isNotEmpty ||
+        filters.gender != RevenueGenderFilter.all ||
+        filters.minAge != null ||
+        filters.maxAge != null ||
+        filters.selectedProceduresSafe.isNotEmpty ||
+        filters.dateSort != RevenueDateSort.newestFirst ||
+        filters.costSort != RevenueCostSort.highToLow ||
+        filters.procedureSortSafe != RevenueProcedureSort.aToZ;
+  }
+
+  int? _computeAge(DateTime? dateOfBirth, DateTime atTime) {
+    if (dateOfBirth == null) return null;
+    var age = atTime.year - dateOfBirth.year;
+    final hadBirthday =
+        atTime.month > dateOfBirth.month ||
+        (atTime.month == dateOfBirth.month && atTime.day >= dateOfBirth.day);
+    if (!hadBirthday) age--;
+    return age < 0 ? 0 : age;
+  }
+
+  String _ageLabel(RevenueEntry entry) {
+    final age = _computeAge(entry.patientDateOfBirth, entry.visitAt);
+    return age?.toString() ?? '-';
+  }
+
+  String _genderLabelFromValue(String? value) {
+    switch ((value ?? '').trim().toLowerCase()) {
+      case 'female':
+        return 'Female';
+      case 'male':
+        return 'Male';
+      case 'other':
+        return 'Other';
+      default:
+        return 'Unknown';
+    }
+  }
+}
+
+class _MonthPickerSheet extends StatefulWidget {
+  const _MonthPickerSheet({required this.initial});
+
+  final DateTime initial;
+
+  @override
+  State<_MonthPickerSheet> createState() => _MonthPickerSheetState();
+}
+
+class _MonthPickerSheetState extends State<_MonthPickerSheet> {
+  late DateTime _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initial;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 300,
+      color: CupertinoColors.systemBackground,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CupertinoButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              CupertinoButton(
+                onPressed: () => Navigator.of(context).pop(_value),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+          Expanded(
+            child: CupertinoDatePicker(
+              mode: CupertinoDatePickerMode.monthYear,
+              initialDateTime: _value,
+              minimumYear: 2000,
+              maximumYear: 2100,
+              onDateTimeChanged: (value) {
+                setState(() => _value = DateTime(value.year, value.month, 1));
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RevenueFilterSheet extends StatefulWidget {
+  const _RevenueFilterSheet({
+    required this.initial,
+    required this.procedureOptions,
+  });
+
+  final RevenueFilters initial;
+  final List<String> procedureOptions;
+
+  @override
+  State<_RevenueFilterSheet> createState() => _RevenueFilterSheetState();
+}
+
+class _RevenueFilterSheetState extends State<_RevenueFilterSheet> {
+  late RevenueFilters _filters;
+  late TextEditingController _nameController;
+  late TextEditingController _minAgeController;
+  late TextEditingController _maxAgeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _filters = widget.initial;
+    _nameController = TextEditingController(text: _filters.patientName);
+    _minAgeController = TextEditingController(
+      text: _filters.minAge?.toString() ?? '',
+    );
+    _maxAgeController = TextEditingController(
+      text: _filters.maxAge?.toString() ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _minAgeController.dispose();
+    _maxAgeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 640,
+      color: CupertinoColors.systemBackground,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const Text('Filters'),
+                  CupertinoButton(
+                    onPressed: _apply,
+                    child: const Text('Apply'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.only(bottom: 16),
+                children: [
+                  CupertinoFormSection.insetGrouped(
+                    header: const Text('Date range'),
+                    children: [
+                      CupertinoFormRow(
+                        prefix: const Text('Start'),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: _pickStartDate,
+                          child: Text(_dateLabel(_filters.startDate)),
+                        ),
+                      ),
+                      CupertinoFormRow(
+                        prefix: const Text('End'),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: _pickEndDate,
+                          child: Text(_dateLabel(_filters.endDate)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  CupertinoFormSection.insetGrouped(
+                    header: const Text('Patient'),
+                    children: [
+                      CupertinoFormRow(
+                        prefix: const Text('Name'),
+                        child: CupertinoTextField(
+                          controller: _nameController,
+                          placeholder: 'Contains...',
+                        ),
+                      ),
+                      CupertinoFormRow(
+                        prefix: const Text('Gender'),
+                        child:
+                            CupertinoSlidingSegmentedControl<
+                              RevenueGenderFilter
+                            >(
+                              groupValue: _filters.gender,
+                              children: const {
+                                RevenueGenderFilter.all: Text('All'),
+                                RevenueGenderFilter.female: Text('F'),
+                                RevenueGenderFilter.male: Text('M'),
+                              },
+                              onValueChanged: (value) {
+                                if (value == null) return;
+                                setState(
+                                  () => _filters = _filters.copyWith(
+                                    gender: value,
+                                  ),
+                                );
+                              },
+                            ),
+                      ),
+                      CupertinoFormRow(
+                        prefix: const Text('Min age'),
+                        child: CupertinoTextField(
+                          controller: _minAgeController,
+                          keyboardType: TextInputType.number,
+                          placeholder: 'Optional',
+                        ),
+                      ),
+                      CupertinoFormRow(
+                        prefix: const Text('Max age'),
+                        child: CupertinoTextField(
+                          controller: _maxAgeController,
+                          keyboardType: TextInputType.number,
+                          placeholder: 'Optional',
+                        ),
+                      ),
+                    ],
+                  ),
+                  CupertinoFormSection.insetGrouped(
+                    header: const Text('Sorting'),
+                    children: [
+                      CupertinoFormRow(
+                        prefix: const Text('Cost'),
+                        child:
+                            CupertinoSlidingSegmentedControl<RevenueCostSort>(
+                              groupValue: _filters.costSort,
+                              children: const {
+                                RevenueCostSort.lowToHigh: Text('Low-High'),
+                                RevenueCostSort.highToLow: Text('High-Low'),
+                              },
+                              onValueChanged: (value) {
+                                if (value == null) return;
+                                setState(
+                                  () => _filters = _filters.copyWith(
+                                    costSort: value,
+                                  ),
+                                );
+                              },
+                            ),
+                      ),
+                      CupertinoFormRow(
+                        prefix: const Text('Procedure Include'),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: _pickProcedures,
+                          child: Text(_procedureLabel()),
+                        ),
+                      ),
+                      CupertinoFormRow(
+                        prefix: const Text('Date'),
+                        child:
+                            CupertinoSlidingSegmentedControl<RevenueDateSort>(
+                              groupValue: _filters.dateSort,
+                              children: const {
+                                RevenueDateSort.newestFirst: Text('New-Old'),
+                                RevenueDateSort.oldestFirst: Text('Old-New'),
+                              },
+                              onValueChanged: (value) {
+                                if (value == null) return;
+                                setState(
+                                  () => _filters = _filters.copyWith(
+                                    dateSort: value,
+                                  ),
+                                );
+                              },
+                            ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: CupertinoButton(
+                      onPressed: () =>
+                          Navigator.of(context).pop(const RevenueFilters()),
+                      child: const Text('Reset all'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickStartDate() async {
+    final initial = _filters.startDate ?? DateTime.now();
+    final picked = await showCupertinoModalPopup<DateTime?>(
+      context: context,
+      builder: (context) => _SimpleDatePickerSheet(initial: initial),
+    );
+
+    if (picked == null) return;
+    setState(() => _filters = _filters.copyWith(startDate: picked));
+  }
+
+  Future<void> _pickEndDate() async {
+    final initial = _filters.endDate ?? _filters.startDate ?? DateTime.now();
+    final picked = await showCupertinoModalPopup<DateTime?>(
+      context: context,
+      builder: (context) => _SimpleDatePickerSheet(initial: initial),
+    );
+
+    if (picked == null) return;
+    setState(() => _filters = _filters.copyWith(endDate: picked));
+  }
+
+  Future<void> _pickProcedures() async {
+    final selected = await showCupertinoModalPopup<Set<String>?>(
+      context: context,
+      builder: (context) => _ProcedureMultiSelectSheet(
+        options: widget.procedureOptions,
+        selected: _filters.selectedProceduresSafe,
+      ),
+    );
+    if (selected == null) return;
+    setState(() => _filters = _filters.copyWith(selectedProcedures: selected));
+  }
+
+  void _apply() {
+    final minAge = int.tryParse(_minAgeController.text.trim());
+    final maxAge = int.tryParse(_maxAgeController.text.trim());
+
+    Navigator.of(context).pop(
+      _filters.copyWith(
+        patientName: _nameController.text.trim(),
+        minAge: minAge,
+        maxAge: maxAge,
+        clearMinAge: _minAgeController.text.trim().isEmpty,
+        clearMaxAge: _maxAgeController.text.trim().isEmpty,
+      ),
+    );
+  }
+
+  String _dateLabel(DateTime? value) {
+    if (value == null) return 'Select';
+    return DateFormat('dd.MM.yyyy', 'tr_TR').format(value);
+  }
+
+  String _procedureLabel() {
+    if (_filters.selectedProceduresSafe.isEmpty) return 'All';
+    if (_filters.selectedProceduresSafe.length == 1) {
+      return _filters.selectedProceduresSafe.first;
+    }
+    return '${_filters.selectedProceduresSafe.length} selected';
+  }
+}
+
+class _ProcedureMultiSelectSheet extends StatefulWidget {
+  const _ProcedureMultiSelectSheet({
+    required this.options,
+    required this.selected,
+  });
+
+  final List<String> options;
+  final Set<String> selected;
+
+  @override
+  State<_ProcedureMultiSelectSheet> createState() =>
+      _ProcedureMultiSelectSheetState();
+}
+
+class _ProcedureMultiSelectSheetState
+    extends State<_ProcedureMultiSelectSheet> {
+  late Set<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = {...widget.selected};
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 480,
+      color: CupertinoColors.systemBackground,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  onPressed: () => Navigator.of(context).pop(null),
+                  child: const Text('Cancel'),
+                ),
+                CupertinoButton(
+                  onPressed: () => Navigator.of(context).pop(_selected),
+                  child: const Text('Done'),
+                ),
+              ],
+            ),
+            Expanded(
+              child: ListView(
+                children: [
+                  CupertinoListTile(
+                    title: const Text('All procedures'),
+                    trailing: _selected.isEmpty
+                        ? const Icon(CupertinoIcons.check_mark)
+                        : null,
+                    onTap: () => setState(() => _selected.clear()),
+                  ),
+                  for (final option in widget.options)
+                    CupertinoListTile(
+                      title: Text(option),
+                      trailing: _selected.contains(option)
+                          ? const Icon(CupertinoIcons.check_mark)
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          if (_selected.contains(option)) {
+                            _selected.remove(option);
+                          } else {
+                            _selected.add(option);
+                          }
+                        });
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SimpleDatePickerSheet extends StatefulWidget {
+  const _SimpleDatePickerSheet({required this.initial});
+
+  final DateTime initial;
+
+  @override
+  State<_SimpleDatePickerSheet> createState() => _SimpleDatePickerSheetState();
+}
+
+class _AddIncomeSheet extends StatefulWidget {
+  const _AddIncomeSheet();
+
+  @override
+  State<_AddIncomeSheet> createState() => _AddIncomeSheetState();
+}
+
+class _AddIncomeSheetState extends State<_AddIncomeSheet> {
+  final _titleController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _notesController = TextEditingController();
+  DateTime _incomeAt = DateTime.now();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _amountController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 460,
+      color: CupertinoColors.systemBackground,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                CupertinoButton(onPressed: _save, child: const Text('Save')),
+              ],
+            ),
+            Expanded(
+              child: ListView(
+                children: [
+                  CupertinoFormSection.insetGrouped(
+                    header: const Text('New Income'),
+                    children: [
+                      CupertinoFormRow(
+                        prefix: const Text('Title'),
+                        child: CupertinoTextField(
+                          controller: _titleController,
+                          placeholder: 'Required',
+                        ),
+                      ),
+                      CupertinoFormRow(
+                        prefix: const Text('Amount'),
+                        child: CupertinoTextField(
+                          controller: _amountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          placeholder: '0.00',
+                        ),
+                      ),
+                      CupertinoFormRow(
+                        prefix: const Text('Date'),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: _pickDate,
+                          child: Text(
+                            DateFormat('dd.MM.yyyy', 'tr_TR').format(_incomeAt),
+                          ),
+                        ),
+                      ),
+                      CupertinoFormRow(
+                        prefix: const Text('Notes'),
+                        child: CupertinoTextField(
+                          controller: _notesController,
+                          placeholder: 'Optional',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showCupertinoModalPopup<DateTime>(
+      context: context,
+      builder: (context) => _SimpleDatePickerSheet(initial: _incomeAt),
+    );
+    if (picked == null) return;
+    setState(() => _incomeAt = picked);
+  }
+
+  void _save() {
+    final title = _titleController.text.trim();
+    final amount = tryToCents(_amountController.text.trim());
+    if (title.isEmpty || amount == null || amount <= 0) {
+      return;
+    }
+
+    Navigator.of(context).pop(
+      _ManualIncomeDraft(
+        title: title,
+        amount: amount,
+        incomeAt: _incomeAt,
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+      ),
+    );
+  }
+}
+
+class _ManualIncomeDraft {
+  const _ManualIncomeDraft({
+    required this.title,
+    required this.amount,
+    required this.incomeAt,
+    required this.notes,
+  });
+
+  final String title;
+  final int amount;
+  final DateTime incomeAt;
+  final String? notes;
+}
+
+class _SimpleDatePickerSheetState extends State<_SimpleDatePickerSheet> {
+  late DateTime _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initial;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 300,
+      color: CupertinoColors.systemBackground,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CupertinoButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              CupertinoButton(
+                onPressed: () => Navigator.of(context).pop(_value),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
+          Expanded(
+            child: CupertinoDatePicker(
+              mode: CupertinoDatePickerMode.date,
+              initialDateTime: _value,
+              minimumYear: 2000,
+              maximumYear: 2100,
+              onDateTimeChanged: (value) => setState(() => _value = value),
+            ),
+          ),
+        ],
       ),
     );
   }

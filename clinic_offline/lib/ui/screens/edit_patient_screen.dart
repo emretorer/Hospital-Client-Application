@@ -21,6 +21,7 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime? _dob;
+  String? _gender;
 
   @override
   void initState() {
@@ -31,6 +32,7 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
       _phoneController.text = patient.phone ?? '';
       _notesController.text = patient.notes ?? '';
       _dob = patient.dateOfBirth;
+      _gender = patient.gender;
     }
   }
 
@@ -49,14 +51,20 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
     final id = widget.patient?.id ?? const Uuid().v4();
     final companion = PatientsCompanion(
       id: Value(id),
-      fullName:
-          Value(PatientsRepository.normalizePatientName(_nameController.text)),
-      phone: Value(_phoneController.text.trim().isEmpty
-          ? null
-          : _phoneController.text.trim()),
-      notes: Value(_notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim()),
+      fullName: Value(
+        PatientsRepository.normalizePatientName(_nameController.text),
+      ),
+      phone: Value(
+        _phoneController.text.trim().isEmpty
+            ? null
+            : _phoneController.text.trim(),
+      ),
+      gender: Value(_gender),
+      notes: Value(
+        _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+      ),
       dateOfBirth: Value(_dob),
       createdAt: Value(widget.patient?.createdAt ?? DateTime.now()),
     );
@@ -98,6 +106,14 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
                   ),
                 ),
                 CupertinoFormRow(
+                  prefix: const Text('Gender'),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: _pickGender,
+                    child: Text(_genderLabel(_gender)),
+                  ),
+                ),
+                CupertinoFormRow(
                   prefix: const Text('DOB'),
                   child: CupertinoButton(
                     padding: EdgeInsets.zero,
@@ -113,9 +129,11 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
                         setState(() => _dob = picked);
                       }
                     },
-                    child: Text(_dob == null
-                        ? 'Select'
-                        : _dob!.toLocal().toString().split(' ').first),
+                    child: Text(
+                      _dob == null
+                          ? 'Select'
+                          : _dob!.toLocal().toString().split(' ').first,
+                    ),
                   ),
                 ),
                 CupertinoFormRow(
@@ -131,6 +149,54 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _pickGender() async {
+    final selected = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('Select Gender'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop('female'),
+            child: const Text('Female'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop('male'),
+            child: const Text('Male'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop('other'),
+            child: const Text('Other'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop('clear'),
+            isDestructiveAction: true,
+            child: const Text('Clear'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(context).pop('cancel'),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+
+    if (!mounted || selected == null || selected == 'cancel') return;
+    setState(() => _gender = selected == 'clear' ? null : selected);
+  }
+
+  String _genderLabel(String? value) {
+    switch (value) {
+      case 'female':
+        return 'Female';
+      case 'male':
+        return 'Male';
+      case 'other':
+        return 'Other';
+      default:
+        return 'Select';
+    }
   }
 }
 

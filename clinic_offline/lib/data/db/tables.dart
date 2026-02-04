@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 class Patients extends Table {
   TextColumn get id => text()();
   TextColumn get fullName => text()();
+  TextColumn get gender => text().nullable()();
   DateTimeColumn get dateOfBirth => dateTime().nullable()();
   TextColumn get phone => text().nullable()();
   TextColumn get notes => text().nullable()();
@@ -66,6 +67,18 @@ class ProductUsages extends Table {
   TextColumn get visitId => text().references(Visits, #id)();
   TextColumn get productId => text().references(Products, #id)();
   IntColumn get quantity => integer()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class ManualIncomes extends Table {
+  TextColumn get id => text()();
+  TextColumn get title => text()();
+  IntColumn get amount => integer()();
+  DateTimeColumn get incomeAt => dateTime()();
+  TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
 
   @override

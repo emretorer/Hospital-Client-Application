@@ -9,6 +9,7 @@ void main() {
     await db.customSelect('SELECT 1').get();
     await db.customSelect('SELECT 1 FROM procedures LIMIT 1').get();
     await db.customSelect('SELECT 1 FROM visit_procedures LIMIT 1').get();
+    await db.customSelect('SELECT 1 FROM manual_incomes LIMIT 1').get();
     await db.close();
   });
 }
