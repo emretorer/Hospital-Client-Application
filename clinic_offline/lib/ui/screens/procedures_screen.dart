@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers.dart';
-import '../widgets/money_format.dart';
 import 'procedure_edit_screen.dart';
 
 class ProceduresScreen extends ConsumerWidget {
@@ -35,9 +34,6 @@ class ProceduresScreen extends ConsumerWidget {
                 for (final proc in items)
                   CupertinoListTile(
                     title: Text(proc.name),
-                    trailing: Text(proc.defaultPrice == null
-                        ? '-'
-                        : centsToTry(proc.defaultPrice!)),
                     onTap: () {
                       Navigator.of(context).push(
                         CupertinoPageRoute(

@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../providers.dart';
+import 'backup_screen.dart';
 import 'procedures_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -149,6 +150,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () {
                     Navigator.of(context).push(
                       CupertinoPageRoute(builder: (_) => const ProceduresScreen()),
+                    );
+                  },
+                ),
+                CupertinoListTile(
+                  title: const Text('Backup'),
+                  trailing: const Icon(CupertinoIcons.chevron_forward),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      CupertinoPageRoute(builder: (_) => const BackupScreen()),
                     );
                   },
                 ),

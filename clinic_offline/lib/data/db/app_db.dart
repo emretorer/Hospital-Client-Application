@@ -30,7 +30,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test(super.executor) : _paths = const AppPaths();
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -98,8 +98,49 @@ class AppDatabase extends _$AppDatabase {
           'CREATE INDEX IF NOT EXISTS manual_incomes_incomeAt ON manual_incomes (income_at DESC)',
         );
       }
+      if (from < 7) {
+        await m.addColumn(manualIncomes, manualIncomes.patientName);
+        await m.addColumn(manualIncomes, manualIncomes.procedureName);
+        await m.addColumn(manualIncomes, manualIncomes.productName);
+      }
+    },
+    beforeOpen: (details) async {
+      await _ensureManualIncomeColumns();
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS manual_incomes_incomeAt ON manual_incomes (income_at DESC)',
+      );
     },
   );
+
+  Future<void> _ensureManualIncomeColumns() async {
+    final tableExistsRow = await customSelect(
+      "SELECT COUNT(*) AS cnt FROM sqlite_master WHERE type = 'table' AND name = 'manual_incomes'",
+    ).getSingle();
+    if (tableExistsRow.read<int>('cnt') == 0) return;
+
+    final columns = await customSelect(
+      "PRAGMA table_info('manual_incomes')",
+    ).get();
+    final names = columns
+        .map((row) => row.read<String>('name').toLowerCase())
+        .toSet();
+
+    if (!names.contains('patient_name')) {
+      await customStatement(
+        'ALTER TABLE manual_incomes ADD COLUMN patient_name TEXT',
+      );
+    }
+    if (!names.contains('procedure_name')) {
+      await customStatement(
+        'ALTER TABLE manual_incomes ADD COLUMN procedure_name TEXT',
+      );
+    }
+    if (!names.contains('product_name')) {
+      await customStatement(
+        'ALTER TABLE manual_incomes ADD COLUMN product_name TEXT',
+      );
+    }
+  }
 
   Future<File> checkpointToTempFile(Directory tempDir) async {
     final tempPath = '${tempDir.path}${Platform.pathSeparator}db_backup.sqlite';

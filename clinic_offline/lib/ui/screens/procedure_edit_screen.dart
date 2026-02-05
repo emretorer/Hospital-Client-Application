@@ -54,11 +54,22 @@ class _ProcedureEditScreenState extends ConsumerState<ProcedureEditScreen> {
     }
   }
 
+  Future<void> _delete() async {
+    final procedure = widget.procedure;
+    if (procedure == null) return;
+    await ref.read(proceduresRepositoryProvider).deleteById(procedure.id);
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: Text(widget.procedure == null ? 'New Procedure' : 'Edit Procedure'),
+        middle: Text(
+          widget.procedure == null ? 'New Procedure' : 'Edit Procedure',
+        ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: _save,
@@ -68,17 +79,42 @@ class _ProcedureEditScreenState extends ConsumerState<ProcedureEditScreen> {
       child: SafeArea(
         child: ListView(
           children: [
-            CupertinoFormSection.insetGrouped(
-              children: [
-                CupertinoFormRow(
-                  prefix: const Text('Name'),
-                  child: CupertinoTextField(
-                    controller: _nameController,
-                    placeholder: 'Required',
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: CupertinoColors.systemGrey6.resolveFrom(context),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: CupertinoFormSection.insetGrouped(
+                  margin: EdgeInsets.zero,
+                  children: [
+                    CupertinoFormRow(
+                      prefix: const Text('Name'),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 12),
+                        child: CupertinoTextField(
+                          controller: _nameController,
+                          placeholder: 'Required',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (widget.procedure != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: CupertinoButton(
+                  onPressed: _delete,
+                  color: const Color(0xFFFF4D4D),
+                  child: const Text(
+                    'Delete Procedure',
+                    style: TextStyle(color: CupertinoColors.white),
                   ),
                 ),
-              ],
-            ),
+              ),
           ],
         ),
       ),

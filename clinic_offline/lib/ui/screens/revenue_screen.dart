@@ -12,13 +12,10 @@ import '../../providers.dart';
 import '../widgets/money_format.dart';
 
 final _monthlyEntriesProvider =
-    FutureProvider.family<List<RevenueEntry>, DateTime>((
-      ref,
-      monthStart,
-    ) async {
+    StreamProvider.family<List<RevenueEntry>, DateTime>((ref, monthStart) {
       final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1);
       final repo = ref.watch(analyticsRepositoryProvider);
-      return repo.getMonthlyRevenueEntries(monthStart, monthEnd);
+      return repo.watchMonthlyRevenueEntries(monthStart, monthEnd);
     });
 
 enum RevenueDateSort { newestFirst, oldestFirst }
@@ -28,6 +25,16 @@ enum RevenueCostSort { lowToHigh, highToLow }
 enum RevenueProcedureSort { aToZ, zToA }
 
 enum RevenueGenderFilter { all, female, male }
+
+Widget _formPrefix(String text) {
+  return SizedBox(
+    width: 64,
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: Text(text, textAlign: TextAlign.left),
+    ),
+  );
+}
 
 class RevenueFilters {
   const RevenueFilters({
@@ -111,9 +118,20 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen> {
   RevenueFilters _filters = const RevenueFilters();
   final Set<String> _expandedIds = <String>{};
   bool _showAll = false;
+  bool _wasTickerModeEnabled = true;
+  int _amountAnimVersion = 0;
 
   @override
   Widget build(BuildContext context) {
+    final tickerEnabled = TickerMode.of(context);
+    if (tickerEnabled && !_wasTickerModeEnabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _amountAnimVersion++);
+      });
+    }
+    _wasTickerModeEnabled = tickerEnabled;
+
     final monthLabel = DateFormat('MMMM yyyy', 'tr_TR').format(_selectedMonth);
     final entriesAsync = ref.watch(_monthlyEntriesProvider(_selectedMonth));
 
@@ -225,7 +243,20 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen> {
     final sorted = [...filtered]
       ..sort((a, b) => _compareEntries(a, b, _filters));
 
-    final total = sorted.fold<int>(0, (sum, item) => sum + item.totalCents);
+    final grossTotal = sorted.fold<int>(
+      0,
+      (sum, item) => sum + item.totalCents,
+    );
+    final visitProductCosts = <String, int>{};
+    for (final entry in sorted) {
+      if (entry.isManualIncomeSafe) continue;
+      visitProductCosts[entry.visitId] = entry.visitProductCostCents;
+    }
+    final totalProductCost = visitProductCosts.values.fold<int>(
+      0,
+      (sum, item) => sum + item,
+    );
+    final netTotal = grossTotal - totalProductCost;
 
     final visibleCount = _showAll
         ? sorted.length
@@ -235,9 +266,17 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            centsToTry(total),
-            style: CupertinoTheme.of(context).textTheme.navLargeTitleTextStyle,
+          child: TweenAnimationBuilder<double>(
+            key: ValueKey('amount-$_amountAnimVersion-$netTotal'),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            tween: Tween<double>(begin: 0, end: netTotal.toDouble()),
+            builder: (context, value, _) {
+              return Text(
+                centsToTry(value.round()),
+                style: CupertinoTheme.of(context).textTheme.navLargeTitleTextStyle,
+              );
+            },
           ),
         ),
         Padding(
@@ -247,16 +286,46 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen> {
             child: const Text('Add Income'),
           ),
         ),
-        CupertinoListSection.insetGrouped(
-          header: const Text('Revenues'),
-          children: [
-            if (sorted.isEmpty)
-              const CupertinoListTile(
-                title: Text('No procedures for this month.'),
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Revenues',
+                style: TextStyle(fontSize: 36 / 2, fontWeight: FontWeight.w700),
               ),
-            for (final entry in sorted.take(visibleCount))
-              _buildEntryTile(context, entry),
-          ],
+              const SizedBox(height: 10),
+              if (sorted.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemBackground.resolveFrom(
+                      context,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text('No procedures for this month.'),
+                ),
+              for (var i = 0; i < sorted.take(visibleCount).length; i++) ...[
+                if (i > 0) const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemGrey5.resolveFrom(
+                      context,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: CupertinoColors.systemGrey4.resolveFrom(context),
+                    ),
+                  ),
+                  child: _buildEntryTile(context, sorted[i]),
+                ),
+              ],
+            ],
+          ),
         ),
         if (sorted.length > _collapsedItemCount)
           Padding(
@@ -272,6 +341,9 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen> {
 
   Widget _buildEntryTile(BuildContext context, RevenueEntry entry) {
     final isExpanded = _expandedIds.contains(entry.id);
+    final lineTotalAfterCost =
+        entry.totalCents -
+        (entry.isManualIncomeSafe ? 0 : entry.visitProductCostCents);
 
     return Column(
       children: [
@@ -280,7 +352,7 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen> {
           subtitle: Text(
             '${DateFormat('dd.MM.yyyy HH:mm', 'tr_TR').format(entry.visitAt)} - ${entry.patientName}',
           ),
-          trailing: Text(centsToTry(entry.totalCents)),
+          trailing: Text(centsToTry(lineTotalAfterCost)),
           onTap: () {
             setState(() {
               if (isExpanded) {
@@ -293,29 +365,59 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen> {
         ),
         if (isExpanded)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _detailRow(
-                  'Type',
-                  entry.isManualIncomeSafe ? 'Manual income' : 'Procedure',
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemBackground.resolveFrom(context),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: CupertinoColors.systemGrey4.resolveFrom(context),
                 ),
-                _detailRow('Patient', entry.patientName),
-                if (!entry.isManualIncomeSafe)
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   _detailRow(
-                    'Gender',
-                    _genderLabelFromValue(entry.patientGender),
+                    'Type',
+                    entry.isManualIncomeSafe ? 'Manual income' : 'Procedure',
                   ),
-                if (!entry.isManualIncomeSafe)
-                  _detailRow('Age', _ageLabel(entry)),
-                _detailRow('Quantity', '${entry.quantity}'),
-                _detailRow('Unit price', centsToTry(entry.unitPrice)),
-                _detailRow('Discount', centsToTry(entry.discount)),
-                _detailRow('Total', centsToTry(entry.totalCents)),
-                if ((entry.notes ?? '').trim().isNotEmpty)
-                  _detailRow('Notes', entry.notes!.trim(), hasDivider: false),
-              ],
+                  _detailRow('Patient', entry.patientName),
+                  if (!entry.isManualIncomeSafe)
+                    _detailRow(
+                      'Gender',
+                      _genderLabelFromValue(entry.patientGender),
+                    ),
+                  if (!entry.isManualIncomeSafe)
+                    _detailRow('Age', _ageLabel(entry)),
+                  _detailRow('Procedure fee', centsToTry(entry.unitPrice)),
+                  _detailRow('Discount', centsToTry(entry.discount)),
+                  if (!entry.isManualIncomeSafe)
+                    _detailRow(
+                      'Product',
+                      (entry.usedProductsSummary ?? '').trim().isEmpty
+                          ? '-'
+                          : entry.usedProductsSummary!.trim(),
+                    ),
+                  if (!entry.isManualIncomeSafe)
+                    _detailRow(
+                      'Product cost',
+                      entry.visitProductCostCents <= 0
+                          ? '-'
+                          : '-${centsToTry(entry.visitProductCostCents)}',
+                    ),
+                  if ((entry.productName ?? '').trim().isNotEmpty)
+                    _detailRow('Product', entry.productName!.trim()),
+                  if ((entry.notes ?? '').trim().isNotEmpty)
+                    _detailRow('Notes', entry.notes!.trim()),
+                  _detailRow(
+                    'Total',
+                    centsToTry(lineTotalAfterCost),
+                    hasDivider: false,
+                  ),
+                ],
+              ),
             ),
           ),
       ],
@@ -390,9 +492,23 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen> {
   }
 
   Future<void> _showAddIncomeSheet() async {
+    final results = await Future.wait([
+      ref.read(patientsRepositoryProvider).watchAll().first,
+      ref.read(proceduresRepositoryProvider).watchAll().first,
+      ref.read(productsRepositoryProvider).watchAll().first,
+    ]);
+    if (!mounted) return;
+    final patients = results[0] as List<Patient>;
+    final procedures = results[1] as List<Procedure>;
+    final products = results[2] as List<Product>;
+
     final result = await showCupertinoModalPopup<_ManualIncomeDraft>(
       context: context,
-      builder: (context) => const _AddIncomeSheet(),
+      builder: (context) => _AddIncomeSheet(
+        patients: patients,
+        procedures: procedures,
+        products: products,
+      ),
     );
     if (result == null) return;
 
@@ -404,6 +520,9 @@ class _RevenueScreenState extends ConsumerState<RevenueScreen> {
             title: Value(result.title),
             amount: Value(result.amount),
             incomeAt: Value(result.incomeAt),
+            patientName: Value(result.patientName),
+            procedureName: Value(result.procedureName),
+            productName: Value(result.productName),
             notes: Value(result.notes),
             createdAt: Value(DateTime.now()),
           ),
@@ -677,7 +796,7 @@ class _RevenueFilterSheetState extends State<_RevenueFilterSheet> {
                     header: const Text('Date range'),
                     children: [
                       CupertinoFormRow(
-                        prefix: const Text('Start'),
+                        prefix: _formPrefix('Start'),
                         child: CupertinoButton(
                           padding: EdgeInsets.zero,
                           onPressed: _pickStartDate,
@@ -685,7 +804,7 @@ class _RevenueFilterSheetState extends State<_RevenueFilterSheet> {
                         ),
                       ),
                       CupertinoFormRow(
-                        prefix: const Text('End'),
+                        prefix: _formPrefix('End'),
                         child: CupertinoButton(
                           padding: EdgeInsets.zero,
                           onPressed: _pickEndDate,
@@ -698,14 +817,14 @@ class _RevenueFilterSheetState extends State<_RevenueFilterSheet> {
                     header: const Text('Patient'),
                     children: [
                       CupertinoFormRow(
-                        prefix: const Text('Name'),
+                        prefix: _formPrefix('Name'),
                         child: CupertinoTextField(
                           controller: _nameController,
                           placeholder: 'Contains...',
                         ),
                       ),
                       CupertinoFormRow(
-                        prefix: const Text('Gender'),
+                        prefix: _formPrefix('Gender'),
                         child:
                             CupertinoSlidingSegmentedControl<
                               RevenueGenderFilter
@@ -727,7 +846,7 @@ class _RevenueFilterSheetState extends State<_RevenueFilterSheet> {
                             ),
                       ),
                       CupertinoFormRow(
-                        prefix: const Text('Min age'),
+                        prefix: _formPrefix('Min age'),
                         child: CupertinoTextField(
                           controller: _minAgeController,
                           keyboardType: TextInputType.number,
@@ -735,7 +854,7 @@ class _RevenueFilterSheetState extends State<_RevenueFilterSheet> {
                         ),
                       ),
                       CupertinoFormRow(
-                        prefix: const Text('Max age'),
+                        prefix: _formPrefix('Max age'),
                         child: CupertinoTextField(
                           controller: _maxAgeController,
                           keyboardType: TextInputType.number,
@@ -748,7 +867,7 @@ class _RevenueFilterSheetState extends State<_RevenueFilterSheet> {
                     header: const Text('Sorting'),
                     children: [
                       CupertinoFormRow(
-                        prefix: const Text('Cost'),
+                        prefix: _formPrefix('Cost'),
                         child:
                             CupertinoSlidingSegmentedControl<RevenueCostSort>(
                               groupValue: _filters.costSort,
@@ -767,7 +886,7 @@ class _RevenueFilterSheetState extends State<_RevenueFilterSheet> {
                             ),
                       ),
                       CupertinoFormRow(
-                        prefix: const Text('Procedure Include'),
+                        prefix: _formPrefix('Select Procedure'),
                         child: CupertinoButton(
                           padding: EdgeInsets.zero,
                           onPressed: _pickProcedures,
@@ -775,7 +894,7 @@ class _RevenueFilterSheetState extends State<_RevenueFilterSheet> {
                         ),
                       ),
                       CupertinoFormRow(
-                        prefix: const Text('Date'),
+                        prefix: _formPrefix('Date'),
                         child:
                             CupertinoSlidingSegmentedControl<RevenueDateSort>(
                               groupValue: _filters.dateSort,
@@ -967,7 +1086,15 @@ class _SimpleDatePickerSheet extends StatefulWidget {
 }
 
 class _AddIncomeSheet extends StatefulWidget {
-  const _AddIncomeSheet();
+  const _AddIncomeSheet({
+    required this.patients,
+    required this.procedures,
+    required this.products,
+  });
+
+  final List<Patient> patients;
+  final List<Procedure> procedures;
+  final List<Product> products;
 
   @override
   State<_AddIncomeSheet> createState() => _AddIncomeSheetState();
@@ -978,6 +1105,9 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime _incomeAt = DateTime.now();
+  String? _patientName;
+  String? _procedureName;
+  String? _productName;
 
   @override
   void dispose() {
@@ -990,7 +1120,7 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 460,
+      height: 660,
       color: CupertinoColors.systemBackground,
       child: SafeArea(
         top: false,
@@ -1007,48 +1137,78 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
               ],
             ),
             Expanded(
-              child: ListView(
-                children: [
-                  CupertinoFormSection.insetGrouped(
-                    header: const Text('New Income'),
-                    children: [
-                      CupertinoFormRow(
-                        prefix: const Text('Title'),
-                        child: CupertinoTextField(
-                          controller: _titleController,
-                          placeholder: 'Required',
-                        ),
-                      ),
-                      CupertinoFormRow(
-                        prefix: const Text('Amount'),
-                        child: CupertinoTextField(
-                          controller: _amountController,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          placeholder: '0.00',
-                        ),
-                      ),
-                      CupertinoFormRow(
-                        prefix: const Text('Date'),
-                        child: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: _pickDate,
-                          child: Text(
-                            DateFormat('dd.MM.yyyy', 'tr_TR').format(_incomeAt),
+              child: Container(
+                color: CupertinoColors.systemGrey6.resolveFrom(context),
+                child: ListView(
+                  children: [
+                    CupertinoFormSection.insetGrouped(
+                      header: const Text('New Income'),
+                      children: [
+                        CupertinoFormRow(
+                          prefix: _formPrefix('Title'),
+                          child: CupertinoTextField(
+                            controller: _titleController,
+                            placeholder: 'Optional',
                           ),
                         ),
-                      ),
-                      CupertinoFormRow(
-                        prefix: const Text('Notes'),
-                        child: CupertinoTextField(
-                          controller: _notesController,
-                          placeholder: 'Optional',
+                        CupertinoFormRow(
+                          prefix: _formPrefix('Patient'),
+                          child: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: _pickPatient,
+                            child: Text(_patientName ?? 'Select'),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        CupertinoFormRow(
+                          prefix: _formPrefix('Procedure'),
+                          child: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: _pickProcedure,
+                            child: Text(_procedureName ?? 'Select'),
+                          ),
+                        ),
+                        CupertinoFormRow(
+                          prefix: _formPrefix('Product'),
+                          child: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: _pickProduct,
+                            child: Text(_productName ?? 'Optional'),
+                          ),
+                        ),
+                        CupertinoFormRow(
+                          prefix: _formPrefix('Amount'),
+                          child: CupertinoTextField(
+                            controller: _amountController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            placeholder: '0.00',
+                          ),
+                        ),
+                        CupertinoFormRow(
+                          prefix: _formPrefix('Date'),
+                          child: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: _pickDate,
+                            child: Text(
+                              DateFormat('dd.MM.yyyy', 'tr_TR').format(
+                                _incomeAt,
+                              ),
+                            ),
+                          ),
+                        ),
+                        CupertinoFormRow(
+                          prefix: _formPrefix('Notes'),
+                          child: CupertinoTextField(
+                            controller: _notesController,
+                            placeholder: 'Optional',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             ),
           ],
@@ -1066,18 +1226,91 @@ class _AddIncomeSheetState extends State<_AddIncomeSheet> {
     setState(() => _incomeAt = picked);
   }
 
+  Future<void> _pickPatient() async {
+    final selected = await _pickFromOptions(
+      title: 'Select Patient',
+      options: widget.patients.map((e) => e.fullName).toList(),
+      allowClear: false,
+    );
+    if (selected == null) return;
+    setState(() => _patientName = selected);
+  }
+
+  Future<void> _pickProcedure() async {
+    final selected = await _pickFromOptions(
+      title: 'Select Procedure',
+      options: widget.procedures.map((e) => e.name).toList(),
+      allowClear: false,
+    );
+    if (selected == null) return;
+    setState(() => _procedureName = selected);
+  }
+
+  Future<void> _pickProduct() async {
+    final selected = await _pickFromOptions(
+      title: 'Select Product',
+      options: widget.products.map((e) => e.name).toList(),
+      allowClear: true,
+    );
+    if (!mounted) return;
+    setState(() => _productName = selected);
+  }
+
+  Future<String?> _pickFromOptions({
+    required String title,
+    required List<String> options,
+    required bool allowClear,
+  }) async {
+    if (options.isEmpty) return null;
+    final selected = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text(title),
+        actions: [
+          for (final option in options)
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.of(context).pop(option),
+              child: Text(option),
+            ),
+          if (allowClear)
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () => Navigator.of(context).pop(''),
+              child: const Text('Clear'),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(context).pop('__cancel__'),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+    if (selected == null || selected == '__cancel__') return null;
+    if (selected.isEmpty) return null;
+    return selected;
+  }
+
   void _save() {
-    final title = _titleController.text.trim();
-    final amount = tryToCents(_amountController.text.trim());
-    if (title.isEmpty || amount == null || amount <= 0) {
+    if (_patientName == null || _procedureName == null) {
       return;
     }
+    final titleText = _titleController.text.trim();
+    final amount = tryToCents(_amountController.text.trim());
+    if (amount == null || amount <= 0) {
+      return;
+    }
+    final title = titleText.isEmpty
+        ? '${_procedureName!} - ${_patientName!}'
+        : titleText;
 
     Navigator.of(context).pop(
       _ManualIncomeDraft(
         title: title,
         amount: amount,
         incomeAt: _incomeAt,
+        patientName: _patientName!,
+        procedureName: _procedureName!,
+        productName: _productName,
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
@@ -1091,12 +1324,18 @@ class _ManualIncomeDraft {
     required this.title,
     required this.amount,
     required this.incomeAt,
+    required this.patientName,
+    required this.procedureName,
+    required this.productName,
     required this.notes,
   });
 
   final String title;
   final int amount;
   final DateTime incomeAt;
+  final String patientName;
+  final String procedureName;
+  final String? productName;
   final String? notes;
 }
 

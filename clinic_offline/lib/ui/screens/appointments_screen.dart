@@ -266,7 +266,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
           ),
           CupertinoActionSheetAction(
             onPressed: () => Navigator.of(context).pop(2),
-            child: const Text('Upcoming 🕒'),
+            child: const Icon(CupertinoIcons.clock),
           ),
           CupertinoActionSheetAction(
             onPressed: () => Navigator.of(context).pop(3),
@@ -298,9 +298,31 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
         content: Column(
           children: [
             const SizedBox(height: 8),
-            Text('Patient: $patientName'),
+            RichText(
+              text: TextSpan(
+                style: CupertinoTheme.of(context).textTheme.textStyle,
+                children: [
+                  const TextSpan(
+                    text: 'Patient: ',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  TextSpan(text: patientName),
+                ],
+              ),
+            ),
             const SizedBox(height: 6),
-            Text('Note: ${appt.note ?? '-'}'),
+            RichText(
+              text: TextSpan(
+                style: CupertinoTheme.of(context).textTheme.textStyle,
+                children: [
+                  const TextSpan(
+                    text: 'Note: ',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  TextSpan(text: appt.note ?? '-'),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
@@ -350,28 +372,33 @@ class _AppointmentDialogState extends State<_AppointmentDialog> {
   Widget build(BuildContext context) {
     return CupertinoAlertDialog(
       title: const Text('New Appointment'),
-      content: Column(
-        children: [
-          const SizedBox(height: 12),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: _pickDate,
-            child: Text('Scheduled: ${_formatTurkeyTime(_scheduledAt)}'),
-          ),
-          const SizedBox(height: 8),
-          CupertinoTextField(
-            controller: _noteController,
-            placeholder: 'Note',
-          ),
-          const SizedBox(height: 12),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: _pickPatient,
-            child: Text(_patientId == null
-                ? 'Select Patient'
-                : _selectedPatientName()),
-          ),
-        ],
+      content: SizedBox(
+        width: double.infinity,
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _pickPatient,
+              child: Text(_patientId == null
+                  ? 'Select Patient'
+                  : _selectedPatientName()),
+            ),
+            const SizedBox(height: 8),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _pickDate,
+              child: Text('Scheduled: ${_formatTurkeyTime(_scheduledAt)}'),
+            ),
+            const SizedBox(height: 8),
+            CupertinoTextField(
+              controller: _noteController,
+              placeholder: 'Note',
+              maxLines: 1,
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
       actions: [
         CupertinoDialogAction(

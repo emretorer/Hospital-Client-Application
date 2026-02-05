@@ -78,6 +78,9 @@ class ManualIncomes extends Table {
   TextColumn get title => text()();
   IntColumn get amount => integer()();
   DateTimeColumn get incomeAt => dateTime()();
+  TextColumn get patientName => text().nullable()();
+  TextColumn get procedureName => text().nullable()();
+  TextColumn get productName => text().nullable()();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
 

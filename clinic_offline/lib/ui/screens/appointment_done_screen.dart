@@ -70,11 +70,6 @@ class _AppointmentDoneScreenState extends ConsumerState<AppointmentDoneScreen> {
       setState(() {
         _procedureId = selected.id;
         _procedureName = selected.name;
-        if (_unitPriceController.text.trim().isEmpty &&
-            selected.defaultPrice != null) {
-          _unitPriceController.text =
-              (selected.defaultPrice! / 100).toStringAsFixed(2);
-        }
       });
     }
   }

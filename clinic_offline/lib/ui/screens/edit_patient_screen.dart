@@ -7,6 +7,16 @@ import '../../data/db/app_db.dart';
 import '../../providers.dart';
 import '../../data/repositories/patients_repository.dart';
 
+Widget _formPrefix(String text) {
+  return SizedBox(
+    width: 92,
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: Text(text, textAlign: TextAlign.left),
+    ),
+  );
+}
+
 class EditPatientScreen extends ConsumerStatefulWidget {
   const EditPatientScreen({super.key, this.patient});
 
@@ -92,21 +102,21 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
             CupertinoFormSection.insetGrouped(
               children: [
                 CupertinoFormRow(
-                  prefix: const Text('Full name'),
+                  prefix: _formPrefix('Full name'),
                   child: CupertinoTextField(
                     controller: _nameController,
                     placeholder: 'Required',
                   ),
                 ),
                 CupertinoFormRow(
-                  prefix: const Text('Phone'),
+                  prefix: _formPrefix('Phone'),
                   child: CupertinoTextField(
                     controller: _phoneController,
                     placeholder: 'Optional',
                   ),
                 ),
                 CupertinoFormRow(
-                  prefix: const Text('Gender'),
+                  prefix: _formPrefix('Gender'),
                   child: CupertinoButton(
                     padding: EdgeInsets.zero,
                     onPressed: _pickGender,
@@ -114,7 +124,7 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
                   ),
                 ),
                 CupertinoFormRow(
-                  prefix: const Text('DOB'),
+                  prefix: _formPrefix('DOB'),
                   child: CupertinoButton(
                     padding: EdgeInsets.zero,
                     onPressed: () async {
@@ -137,7 +147,7 @@ class _EditPatientScreenState extends ConsumerState<EditPatientScreen> {
                   ),
                 ),
                 CupertinoFormRow(
-                  prefix: const Text('Notes'),
+                  prefix: _formPrefix('Notes'),
                   child: CupertinoTextField(
                     controller: _notesController,
                     placeholder: 'Optional',

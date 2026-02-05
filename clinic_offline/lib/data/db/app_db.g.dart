@@ -2585,6 +2585,39 @@ class $ManualIncomesTable extends ManualIncomes
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _patientNameMeta = const VerificationMeta(
+    'patientName',
+  );
+  @override
+  late final GeneratedColumn<String> patientName = GeneratedColumn<String>(
+    'patient_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _procedureNameMeta = const VerificationMeta(
+    'procedureName',
+  );
+  @override
+  late final GeneratedColumn<String> procedureName = GeneratedColumn<String>(
+    'procedure_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _productNameMeta = const VerificationMeta(
+    'productName',
+  );
+  @override
+  late final GeneratedColumn<String> productName = GeneratedColumn<String>(
+    'product_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -2611,6 +2644,9 @@ class $ManualIncomesTable extends ManualIncomes
     title,
     amount,
     incomeAt,
+    patientName,
+    procedureName,
+    productName,
     notes,
     createdAt,
   ];
@@ -2655,6 +2691,33 @@ class $ManualIncomesTable extends ManualIncomes
     } else if (isInserting) {
       context.missing(_incomeAtMeta);
     }
+    if (data.containsKey('patient_name')) {
+      context.handle(
+        _patientNameMeta,
+        patientName.isAcceptableOrUnknown(
+          data['patient_name']!,
+          _patientNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('procedure_name')) {
+      context.handle(
+        _procedureNameMeta,
+        procedureName.isAcceptableOrUnknown(
+          data['procedure_name']!,
+          _procedureNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('product_name')) {
+      context.handle(
+        _productNameMeta,
+        productName.isAcceptableOrUnknown(
+          data['product_name']!,
+          _productNameMeta,
+        ),
+      );
+    }
     if (data.containsKey('notes')) {
       context.handle(
         _notesMeta,
@@ -2694,6 +2757,18 @@ class $ManualIncomesTable extends ManualIncomes
         DriftSqlType.dateTime,
         data['${effectivePrefix}income_at'],
       )!,
+      patientName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}patient_name'],
+      ),
+      procedureName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}procedure_name'],
+      ),
+      productName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}product_name'],
+      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -2716,6 +2791,9 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
   final String title;
   final int amount;
   final DateTime incomeAt;
+  final String? patientName;
+  final String? procedureName;
+  final String? productName;
   final String? notes;
   final DateTime createdAt;
   const ManualIncome({
@@ -2723,6 +2801,9 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
     required this.title,
     required this.amount,
     required this.incomeAt,
+    this.patientName,
+    this.procedureName,
+    this.productName,
     this.notes,
     required this.createdAt,
   });
@@ -2733,6 +2814,15 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
     map['title'] = Variable<String>(title);
     map['amount'] = Variable<int>(amount);
     map['income_at'] = Variable<DateTime>(incomeAt);
+    if (!nullToAbsent || patientName != null) {
+      map['patient_name'] = Variable<String>(patientName);
+    }
+    if (!nullToAbsent || procedureName != null) {
+      map['procedure_name'] = Variable<String>(procedureName);
+    }
+    if (!nullToAbsent || productName != null) {
+      map['product_name'] = Variable<String>(productName);
+    }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -2746,6 +2836,15 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
       title: Value(title),
       amount: Value(amount),
       incomeAt: Value(incomeAt),
+      patientName: patientName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(patientName),
+      procedureName: procedureName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(procedureName),
+      productName: productName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(productName),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -2763,6 +2862,9 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
       title: serializer.fromJson<String>(json['title']),
       amount: serializer.fromJson<int>(json['amount']),
       incomeAt: serializer.fromJson<DateTime>(json['incomeAt']),
+      patientName: serializer.fromJson<String?>(json['patientName']),
+      procedureName: serializer.fromJson<String?>(json['procedureName']),
+      productName: serializer.fromJson<String?>(json['productName']),
       notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -2775,6 +2877,9 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
       'title': serializer.toJson<String>(title),
       'amount': serializer.toJson<int>(amount),
       'incomeAt': serializer.toJson<DateTime>(incomeAt),
+      'patientName': serializer.toJson<String?>(patientName),
+      'procedureName': serializer.toJson<String?>(procedureName),
+      'productName': serializer.toJson<String?>(productName),
       'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -2785,6 +2890,9 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
     String? title,
     int? amount,
     DateTime? incomeAt,
+    Value<String?> patientName = const Value.absent(),
+    Value<String?> procedureName = const Value.absent(),
+    Value<String?> productName = const Value.absent(),
     Value<String?> notes = const Value.absent(),
     DateTime? createdAt,
   }) => ManualIncome(
@@ -2792,6 +2900,11 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
     title: title ?? this.title,
     amount: amount ?? this.amount,
     incomeAt: incomeAt ?? this.incomeAt,
+    patientName: patientName.present ? patientName.value : this.patientName,
+    procedureName: procedureName.present
+        ? procedureName.value
+        : this.procedureName,
+    productName: productName.present ? productName.value : this.productName,
     notes: notes.present ? notes.value : this.notes,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -2801,6 +2914,15 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
       title: data.title.present ? data.title.value : this.title,
       amount: data.amount.present ? data.amount.value : this.amount,
       incomeAt: data.incomeAt.present ? data.incomeAt.value : this.incomeAt,
+      patientName: data.patientName.present
+          ? data.patientName.value
+          : this.patientName,
+      procedureName: data.procedureName.present
+          ? data.procedureName.value
+          : this.procedureName,
+      productName: data.productName.present
+          ? data.productName.value
+          : this.productName,
       notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
@@ -2813,6 +2935,9 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
           ..write('title: $title, ')
           ..write('amount: $amount, ')
           ..write('incomeAt: $incomeAt, ')
+          ..write('patientName: $patientName, ')
+          ..write('procedureName: $procedureName, ')
+          ..write('productName: $productName, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -2820,8 +2945,17 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, title, amount, incomeAt, notes, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    title,
+    amount,
+    incomeAt,
+    patientName,
+    procedureName,
+    productName,
+    notes,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2830,6 +2964,9 @@ class ManualIncome extends DataClass implements Insertable<ManualIncome> {
           other.title == this.title &&
           other.amount == this.amount &&
           other.incomeAt == this.incomeAt &&
+          other.patientName == this.patientName &&
+          other.procedureName == this.procedureName &&
+          other.productName == this.productName &&
           other.notes == this.notes &&
           other.createdAt == this.createdAt);
 }
@@ -2839,6 +2976,9 @@ class ManualIncomesCompanion extends UpdateCompanion<ManualIncome> {
   final Value<String> title;
   final Value<int> amount;
   final Value<DateTime> incomeAt;
+  final Value<String?> patientName;
+  final Value<String?> procedureName;
+  final Value<String?> productName;
   final Value<String?> notes;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
@@ -2847,6 +2987,9 @@ class ManualIncomesCompanion extends UpdateCompanion<ManualIncome> {
     this.title = const Value.absent(),
     this.amount = const Value.absent(),
     this.incomeAt = const Value.absent(),
+    this.patientName = const Value.absent(),
+    this.procedureName = const Value.absent(),
+    this.productName = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2856,6 +2999,9 @@ class ManualIncomesCompanion extends UpdateCompanion<ManualIncome> {
     required String title,
     required int amount,
     required DateTime incomeAt,
+    this.patientName = const Value.absent(),
+    this.procedureName = const Value.absent(),
+    this.productName = const Value.absent(),
     this.notes = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
@@ -2869,6 +3015,9 @@ class ManualIncomesCompanion extends UpdateCompanion<ManualIncome> {
     Expression<String>? title,
     Expression<int>? amount,
     Expression<DateTime>? incomeAt,
+    Expression<String>? patientName,
+    Expression<String>? procedureName,
+    Expression<String>? productName,
     Expression<String>? notes,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
@@ -2878,6 +3027,9 @@ class ManualIncomesCompanion extends UpdateCompanion<ManualIncome> {
       if (title != null) 'title': title,
       if (amount != null) 'amount': amount,
       if (incomeAt != null) 'income_at': incomeAt,
+      if (patientName != null) 'patient_name': patientName,
+      if (procedureName != null) 'procedure_name': procedureName,
+      if (productName != null) 'product_name': productName,
       if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -2889,6 +3041,9 @@ class ManualIncomesCompanion extends UpdateCompanion<ManualIncome> {
     Value<String>? title,
     Value<int>? amount,
     Value<DateTime>? incomeAt,
+    Value<String?>? patientName,
+    Value<String?>? procedureName,
+    Value<String?>? productName,
     Value<String?>? notes,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
@@ -2898,6 +3053,9 @@ class ManualIncomesCompanion extends UpdateCompanion<ManualIncome> {
       title: title ?? this.title,
       amount: amount ?? this.amount,
       incomeAt: incomeAt ?? this.incomeAt,
+      patientName: patientName ?? this.patientName,
+      procedureName: procedureName ?? this.procedureName,
+      productName: productName ?? this.productName,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -2919,6 +3077,15 @@ class ManualIncomesCompanion extends UpdateCompanion<ManualIncome> {
     if (incomeAt.present) {
       map['income_at'] = Variable<DateTime>(incomeAt.value);
     }
+    if (patientName.present) {
+      map['patient_name'] = Variable<String>(patientName.value);
+    }
+    if (procedureName.present) {
+      map['procedure_name'] = Variable<String>(procedureName.value);
+    }
+    if (productName.present) {
+      map['product_name'] = Variable<String>(productName.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -2938,6 +3105,9 @@ class ManualIncomesCompanion extends UpdateCompanion<ManualIncome> {
           ..write('title: $title, ')
           ..write('amount: $amount, ')
           ..write('incomeAt: $incomeAt, ')
+          ..write('patientName: $patientName, ')
+          ..write('procedureName: $procedureName, ')
+          ..write('productName: $productName, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -6490,6 +6660,9 @@ typedef $$ManualIncomesTableCreateCompanionBuilder =
       required String title,
       required int amount,
       required DateTime incomeAt,
+      Value<String?> patientName,
+      Value<String?> procedureName,
+      Value<String?> productName,
       Value<String?> notes,
       required DateTime createdAt,
       Value<int> rowid,
@@ -6500,6 +6673,9 @@ typedef $$ManualIncomesTableUpdateCompanionBuilder =
       Value<String> title,
       Value<int> amount,
       Value<DateTime> incomeAt,
+      Value<String?> patientName,
+      Value<String?> procedureName,
+      Value<String?> productName,
       Value<String?> notes,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -6531,6 +6707,21 @@ class $$ManualIncomesTableFilterComposer
 
   ColumnFilters<DateTime> get incomeAt => $composableBuilder(
     column: $table.incomeAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get patientName => $composableBuilder(
+    column: $table.patientName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get procedureName => $composableBuilder(
+    column: $table.procedureName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get productName => $composableBuilder(
+    column: $table.productName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6574,6 +6765,21 @@ class $$ManualIncomesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get patientName => $composableBuilder(
+    column: $table.patientName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get procedureName => $composableBuilder(
+    column: $table.procedureName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get productName => $composableBuilder(
+    column: $table.productName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -6605,6 +6811,21 @@ class $$ManualIncomesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get incomeAt =>
       $composableBuilder(column: $table.incomeAt, builder: (column) => column);
+
+  GeneratedColumn<String> get patientName => $composableBuilder(
+    column: $table.patientName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get procedureName => $composableBuilder(
+    column: $table.procedureName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get productName => $composableBuilder(
+    column: $table.productName,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -6648,6 +6869,9 @@ class $$ManualIncomesTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<int> amount = const Value.absent(),
                 Value<DateTime> incomeAt = const Value.absent(),
+                Value<String?> patientName = const Value.absent(),
+                Value<String?> procedureName = const Value.absent(),
+                Value<String?> productName = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -6656,6 +6880,9 @@ class $$ManualIncomesTableTableManager
                 title: title,
                 amount: amount,
                 incomeAt: incomeAt,
+                patientName: patientName,
+                procedureName: procedureName,
+                productName: productName,
                 notes: notes,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -6666,6 +6893,9 @@ class $$ManualIncomesTableTableManager
                 required String title,
                 required int amount,
                 required DateTime incomeAt,
+                Value<String?> patientName = const Value.absent(),
+                Value<String?> procedureName = const Value.absent(),
+                Value<String?> productName = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
@@ -6674,6 +6904,9 @@ class $$ManualIncomesTableTableManager
                 title: title,
                 amount: amount,
                 incomeAt: incomeAt,
+                patientName: patientName,
+                procedureName: procedureName,
+                productName: productName,
                 notes: notes,
                 createdAt: createdAt,
                 rowid: rowid,

@@ -93,11 +93,6 @@ class _VisitProcedureEditScreenState
       setState(() {
         _procedureId = selected.id;
         _procedureName = selected.name;
-        if (_unitPriceController.text.trim().isEmpty &&
-            selected.defaultPrice != null) {
-          _unitPriceController.text =
-              (selected.defaultPrice! / 100).toStringAsFixed(2);
-        }
       });
     }
   }
@@ -167,7 +162,7 @@ class _VisitProcedureEditScreenState
                   ),
                 ),
                 CupertinoFormRow(
-                  prefix: const Text('Unit Price (\u20BA)'),
+                  prefix: const Text('Procedure Fee (\u20BA)'),
                   child: CupertinoTextField(
                     controller: _unitPriceController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),

@@ -90,7 +90,7 @@ class VisitDetailScreen extends ConsumerWidget {
                             title: Text(item.procedureName),
                             subtitle: Text(
                               'Qty ${item.quantity} - '
-                              'Unit ${centsToTry(item.unitPrice)}'
+                              'Fee ${centsToTry(item.unitPrice)}'
                               '${item.discount > 0 ? ' - Discount ${centsToTry(item.discount)}' : ''}',
                             ),
                             trailing: Text(centsToTry(item.lineTotalCents)),

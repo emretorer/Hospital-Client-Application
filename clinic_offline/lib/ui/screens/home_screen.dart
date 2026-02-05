@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 
 import 'appointments_screen.dart';
-import 'backup_screen.dart';
 import 'patients_screen.dart';
 import 'products_screen.dart';
+import 'procedures_screen.dart';
 import 'revenue_screen.dart';
 import 'settings_screen.dart';
 
@@ -37,8 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Revenue',
           ),
           BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.archivebox),
-            label: 'Backup',
+            icon: Icon(CupertinoIcons.bandage),
+            label: 'Procedures',
           ),
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.settings),
@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           case 4:
             return CupertinoTabView(
-              builder: (_) => const BackupScreen(),
+              builder: (_) => const ProceduresScreen(),
             );
           case 5:
             return CupertinoTabView(
